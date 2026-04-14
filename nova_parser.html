@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nova Parser</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap');
+
+  :root {
+    --navy: #1F4E79;
+    --navy-mid: #2E74B5;
+    --navy-light: #D6E4F0;
+    --ink: #0D1B2A;
+    --gray: #6B7A8D;
+    --light: #F4F7FB;
+    --white: #FFFFFF;
+    --green: #1A7F4B;
+    --green-light: #D4EDDA;
+    --amber: #B45309;
+    --amber-light: #FEF3C7;
+    --red: #991B1B;
+    --red-light: #FEE2E2;
+    --border: #DDE4ED;
+    --mono: 'DM Mono', monospace;
+    --display: 'Syne', sans-serif;
+    --body: 'DM Sans', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--ink);
+    font-family: var(--body);
+    color: var(--white);
+    min-height: 100vh;
+  }
+
+  /* Header */
+  .header {
+    background: var(--navy);
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 2px solid var(--navy-mid);
+  }
+
+  .logo {
+    font-family: var(--display);
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: var(--white);
+  }
+
+  .logo span { color: var(--navy-light); }
+
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #4ADE80;
+    display: inline-block;
+    margin-right: 8px;
+    box-shadow: 0 0 6px #4ADE80;
+  }
+
+  .status-label {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--navy-light);
+  }
+
+  /* Main layout */
+  .main {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+
+  .page-title {
+    font-family: var(--display);
+    font-size: 36px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    margin-bottom: 6px;
+  }
+
+  .page-sub {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--gray);
+    margin-bottom: 36px;
+  }
+
+  /* Panels */
+  .panel {
+    background: #162233;
+    border: 1px solid #253548;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+
+  .panel-header {
+    background: #1a2d42;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid #253548;
+  }
+
+  .panel-num {
+    width: 24px; height: 24px;
+    background: var(--navy-mid);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+    flex-shrink: 0;
+  }
+
+  .panel-title {
+    font-family: var(--display);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+  }
+
+  .panel-body { padding: 20px; }
+
+  /* Textarea */
+  textarea {
+    width: 100%;
+    min-height: 280px;
+    background: #0D1B2A;
+    border: 1px solid #253548;
+    border-radius: 8px;
+    color: #A8C4E0;
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.7;
+    padding: 16px;
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  textarea:focus { border-color: var(--navy-mid); }
+  textarea::placeholder { color: #3A5068; }
+
+  /* Button */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 28px;
+    border-radius: 8px;
+    font-family: var(--display);
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+    letter-spacing: -0.2px;
+  }
+
+  .btn-primary {
+    background: var(--navy-mid);
+    color: var(--white);
+    width: 100%;
+    justify-content: center;
+    font-size: 16px;
+    padding: 16px;
+    margin-top: 16px;
+  }
+
+  .btn-primary:hover { background: #3A85C8; transform: translateY(-1px); }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-primary:disabled { background: #253548; color: #3A5068; cursor: not-allowed; transform: none; }
+
+  .btn-confirm {
+    background: var(--green);
+    color: var(--white);
+    padding: 10px 24px;
+  }
+
+  .btn-confirm:hover { background: #1E9457; }
+
+  .btn-cancel {
+    background: transparent;
+    color: var(--gray);
+    border: 1px solid #253548;
+    padding: 10px 24px;
+  }
+
+  .btn-cancel:hover { border-color: var(--gray); }
+
+  /* Results */
+  .results { display: none; }
+
+  .summary-bar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .badge {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .badge-green { background: var(--green-light); color: var(--green); }
+  .badge-amber { background: var(--amber-light); color: var(--amber); }
+  .badge-red { background: var(--red-light); color: var(--red); }
+  .badge-blue { background: var(--navy-light); color: var(--navy); }
+
+  /* Match cards */
+  .match-card {
+    background: #0D1B2A;
+    border: 1px solid #253548;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+
+  .match-card.high { border-left: 3px solid var(--green); }
+  .match-card.low { border-left: 3px solid var(--amber); }
+  .match-card.no-match { border-left: 3px solid var(--red); }
+
+  .match-header {
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .match-header:hover { background: #162233; }
+
+  .match-addr {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--navy-light);
+  }
+
+  .match-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .confidence {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 4px;
+  }
+
+  .conf-high { background: var(--green-light); color: var(--green); }
+  .conf-low { background: var(--amber-light); color: var(--amber); }
+  .conf-none { background: var(--red-light); color: var(--red); }
+
+  .match-tab {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--gray);
+  }
+
+  .match-body {
+    padding: 0 16px 14px;
+    display: none;
+  }
+
+  .match-body.open { display: block; }
+
+  .match-body table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  .match-body td {
+    padding: 5px 8px;
+    border-bottom: 1px solid #1a2d42;
+  }
+
+  .match-body td:first-child {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--gray);
+    width: 140px;
+  }
+
+  .match-body td:last-child { color: var(--navy-light); }
+
+  .review-flag {
+    background: var(--amber-light);
+    border: 1px solid #FCD34D;
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin-bottom: 10px;
+    font-size: 13px;
+    color: var(--amber);
+  }
+
+  .review-flag strong { display: block; margin-bottom: 4px; font-family: var(--mono); }
+
+  /* Actions */
+  .action-bar {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+    align-items: center;
+  }
+
+  .progress-wrap {
+    background: #0D1B2A;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    display: none;
+  }
+
+  .progress-label {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--navy-light);
+    margin-bottom: 12px;
+  }
+
+  .progress-bar-outer {
+    background: #253548;
+    border-radius: 4px;
+    height: 6px;
+    overflow: hidden;
+  }
+
+  .progress-bar-inner {
+    height: 100%;
+    background: var(--navy-mid);
+    border-radius: 4px;
+    transition: width 0.3s;
+    width: 0%;
+  }
+
+  .success-msg {
+    background: var(--green-light);
+    border: 1px solid #6EE7B7;
+    border-radius: 8px;
+    padding: 16px 20px;
+    color: var(--green);
+    font-family: var(--mono);
+    font-size: 13px;
+    display: none;
+    margin-top: 16px;
+  }
+
+  .error-msg {
+    background: var(--red-light);
+    border: 1px solid #FCA5A5;
+    border-radius: 8px;
+    padding: 16px 20px;
+    color: var(--red);
+    font-family: var(--mono);
+    font-size: 13px;
+    display: none;
+    margin-top: 16px;
+  }
+
+  .chevron { transition: transform 0.2s; font-size: 10px; color: var(--gray); }
+  .chevron.open { transform: rotate(180deg); }
+
+  .spinner {
+    display: inline-block;
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Unlock screen */
+  .unlock-overlay {
+    position: fixed; inset: 0;
+    background: var(--ink);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .unlock-box {
+    background: #162233;
+    border: 1px solid #253548;
+    border-radius: 16px;
+    padding: 40px;
+    width: 420px;
+    max-width: 90vw;
+  }
+
+  .unlock-logo {
+    font-family: var(--display);
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--white);
+    margin-bottom: 6px;
+  }
+
+  .unlock-logo span { color: var(--navy-light); }
+
+  .unlock-sub {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--gray);
+    margin-bottom: 32px;
+  }
+
+  .unlock-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--navy-light);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .unlock-input {
+    width: 100%;
+    background: #0D1B2A;
+    border: 1px solid #253548;
+    border-radius: 8px;
+    color: var(--white);
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 12px 14px;
+    outline: none;
+    margin-bottom: 16px;
+    transition: border-color 0.2s;
+  }
+
+  .unlock-input:focus { border-color: var(--navy-mid); }
+
+  .unlock-note {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--gray);
+    margin-top: 14px;
+    line-height: 1.6;
+  }
+
+  .unlock-error {
+    color: var(--red);
+    font-family: var(--mono);
+    font-size: 12px;
+    margin-top: 10px;
+    display: none;
+  }
+
+</style>
+</head>
+<body>
+
+
+<div class="unlock-overlay" id="unlockOverlay">
+  <div class="unlock-box">
+    <div class="unlock-logo">NOVA <span>PARSER</span></div>
+    <div class="unlock-sub">Field Notes → Master List</div>
+    <div class="unlock-label">Client Secret</div>
+    <input type="password" class="unlock-input" id="secretInput" placeholder="Paste your Azure client secret..." />
+    <button class="btn btn-primary" id="unlockBtn" style="margin-top:0">Unlock</button>
+    <div class="unlock-error" id="unlockError">Invalid secret — authentication failed. Try again.</div>
+    <div class="unlock-note">🔒 Your secret is never stored. It lives in memory for this session only and is cleared when you close the tab.</div>
+  </div>
+</div>
+
+<div class="header">
+  <div class="logo">NOVA <span>PARSER</span></div>
+  <div class="status-label"><span class="status-dot"></span>Connected to SharePoint</div>
+</div>
+
+<div class="main">
+  <div class="page-title">Field Notes Parser</div>
+  <div class="page-sub">Paste your iPhone notes → match to Master List → write to SharePoint</div>
+
+  <!-- Step 1: Input -->
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-num">1</div>
+      <div class="panel-title">Paste Field Notes</div>
+    </div>
+    <div class="panel-body">
+      <textarea id="notesInput" placeholder="[PROBATE-HTX]
+Address: 5719 Spellman Rd
+Priority: high
+Status: vacant
+Contact: neighbor
+Sticky: yes
+Door Knocked: yes
+Podio: yes
+Notes: Neighbor says owner moved to Dallas 2 years ago, mail piling up
+
+[TAX-SUIT]
+Address: 7706 Leather Market St
+Priority: med
+Status: occupied
+Contact: no contact
+Sticky: yes
+Door Knocked: yes
+Podio: no
+Notes: Lights on, car in driveway, no answer
+
+[D4D]
+Address: 4521 Crane St
+Notes: Saw this driving by - completely boarded, overgrown yard, high potential"></textarea>
+      <button class="btn btn-primary" id="parseBtn">
+        <span id="parseBtnText">Parse Notes</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Step 2: Results -->
+  <div class="results" id="resultsPanel">
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-num">2</div>
+        <div class="panel-title">Review Matches</div>
+      </div>
+      <div class="panel-body">
+        <div class="summary-bar" id="summaryBar"></div>
+        <div id="matchList"></div>
+        <div id="reviewFlags"></div>
+        <div class="action-bar">
+          <button class="btn btn-confirm" id="writeBtn">
+            <span id="writeBtnText">Write to Master List</span>
+          </button>
+          <button class="btn btn-cancel" id="resetBtn">Start Over</button>
+        </div>
+        <div class="progress-wrap" id="progressWrap">
+          <div class="progress-label" id="progressLabel">Authenticating...</div>
+          <div class="progress-bar-outer">
+            <div class="progress-bar-inner" id="progressBar"></div>
+          </div>
+        </div>
+        <div class="success-msg" id="successMsg"></div>
+        <div class="error-msg" id="errorMsg"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────────────────────────
+const TENANT_ID    = '7c538589-e77a-4e0e-a035-50e9669c98fb';
+const CLIENT_ID    = '4f3dc49e-04be-4295-abda-96556e7a7f5b';
+let CLIENT_SECRET = null; // entered at runtime
+const SITE_HOST    = 'novapropertysolutions.sharepoint.com';
+const SITE_PATH    = '/sites/NovaPropertySolutions';
+const FILE_ID      = '722c05b7-d3b7-4fc7-b9ab-b3d68eef0d58';
+
+// Tab tag -> sheet name mapping
+const TAG_TO_SHEET = {
+  '[PROBATE-HTX]':  'Probate - Houston',
+  '[PROBATE-OOH]':  'Probate - Out of Houston',
+  '[TAX-SUIT]':     'Taxes Under Suit',
+  '[TAX-JUDG]':     'Taxes Under Judgement',
+  '[FORECLOSURE]':  'Foreclosures',
+  '[PUB-NUIS]':     'Order Public Nuisance',
+  '[TAX-AUC]':      'Tax Auction',
+  '[D4D]':          'D4D', // skip
+};
+
+// Address column per sheet
+const ADDR_COL = {
+  'Probate - Houston':        'Address of Deceased',
+  'Probate - Out of Houston': 'Address of Deceased',
+  'Taxes Under Suit':         'Address',
+  'Taxes Under Judgement':    'Address',
+  'Foreclosures':             'Address',
+  'Order Public Nuisance':    'Address',
+  'Tax Auction':              'Address',
+};
+
+// Field column names in the sheet
+const FIELD_MAP = {
+  'Priority':     'Priority',
+  'Status':       'Status',
+  'Contact':      'Contact',
+  'Sticky':       'Sticky',
+  'Door Knocked': 'Door Knocked',
+  'Podio':        'Podio',
+  'Notes':        'Notes',
+};
+
+// ── PARSER ──────────────────────────────────────────────────────────────────
+function parseNotes() {
+  const raw = document.getElementById('notesInput').value.trim();
+  if (!raw) return;
+
+  const entries = [];
+  const tagPattern = /(\[[\w\-]+\])/g;
+  const parts = raw.split(tagPattern).filter(s => s.trim());
+
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i].trim();
+    if (part.match(/^\[[\w\-]+\]$/)) {
+      const tag = part;
+      const content = parts[i + 1] || '';
+      i++; // skip next since we consumed it
+      if (tag !== '[D4D]') {
+        const entry = parseEntry(tag, content);
+        if (entry) entries.push(entry);
+      }
+    }
+  }
+
+  if (entries.length === 0) {
+    alert('No valid entries found. Check your tag format e.g. [PROBATE-HTX]');
+    return;
+  }
+
+  window._parsedEntries = entries;
+  renderResults(entries);
+}
+
+function parseEntry(tag, block) {
+  const sheet = TAG_TO_SHEET[tag];
+  if (!sheet || sheet === 'D4D') return null;
+
+  const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
+  const fields = {};
+
+  for (const line of lines) {
+    const colon = line.indexOf(':');
+    if (colon === -1) continue;
+    const key = line.slice(0, colon).trim();
+    const val = line.slice(colon + 1).trim();
+    if (val) fields[key] = val;
+  }
+
+  const address = fields['Address'] || null;
+
+  return { tag, sheet, address, fields };
+}
+
+// ── FUZZY MATCH ─────────────────────────────────────────────────────────────
+function normalizeAddr(addr) {
+  if (!addr) return '';
+  return addr
+    .toLowerCase()
+    .replace(/\b(street|str)\b/g, 'st')
+    .replace(/\b(avenue|ave)\b/g, 'ave')
+    .replace(/\b(road)\b/g, 'rd')
+    .replace(/\b(drive)\b/g, 'dr')
+    .replace(/\b(lane)\b/g, 'ln')
+    .replace(/\b(court)\b/g, 'ct')
+    .replace(/\b(boulevard|blvd)\b/g, 'blvd')
+    .replace(/,.*$/, '')       // strip city/state/zip
+    .replace(/[^a-z0-9\s]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function matchScore(a, b) {
+  const na = normalizeAddr(a);
+  const nb = normalizeAddr(b);
+  if (na === nb) return 100;
+  if (na.startsWith(nb) || nb.startsWith(na)) return 90;
+  // Check street number + first word of street match
+  const partsA = na.split(' ');
+  const partsB = nb.split(' ');
+  if (partsA[0] === partsB[0] && partsA[1] === partsB[1]) return 75;
+  return 0;
+}
+
+// ── RENDER RESULTS ──────────────────────────────────────────────────────────
+function renderResults(entries) {
+  document.getElementById('resultsPanel').style.display = 'block';
+
+  let high = 0, low = 0, none = 0;
+  const matchList = document.getElementById('matchList');
+  matchList.innerHTML = '';
+
+  entries.forEach((entry, i) => {
+    // Simulate confidence for now (real match happens at write time)
+    const conf = entry.address ? 'pending' : 'none';
+    const cardClass = entry.address ? 'high' : 'no-match';
+
+    const card = document.createElement('div');
+    card.className = `match-card ${cardClass}`;
+    card.innerHTML = `
+      <div class="match-header" onclick="toggleCard(${i})">
+        <div>
+          <div class="match-addr">${entry.address || '⚠ No address found'}</div>
+          <div class="match-tab" style="margin-top:3px">${entry.sheet}</div>
+        </div>
+        <div class="match-meta">
+          <span class="confidence ${entry.address ? 'conf-high' : 'conf-none'}">
+            ${entry.address ? 'Ready' : 'No Address'}
+          </span>
+          <span class="chevron" id="chev-${i}">▼</span>
+        </div>
+      </div>
+      <div class="match-body" id="body-${i}">
+        <table>
+          ${Object.entries(entry.fields).filter(([k]) => k !== 'Address').map(([k,v]) => `
+            <tr><td>${k}</td><td>${v}</td></tr>
+          `).join('')}
+        </table>
+      </div>
+    `;
+    matchList.appendChild(card);
+
+    if (entry.address) high++; else none++;
+  });
+
+  // Summary
+  document.getElementById('summaryBar').innerHTML = `
+    <span class="badge badge-blue">${entries.length} entries parsed</span>
+    <span class="badge badge-green">${high} ready to write</span>
+    ${none > 0 ? `<span class="badge badge-red">${none} missing address</span>` : ''}
+  `;
+
+  window.scrollTo({ top: document.getElementById('resultsPanel').offsetTop - 20, behavior: 'smooth' });
+}
+
+function toggleCard(i) {
+  const body = document.getElementById(`body-${i}`);
+  const chev = document.getElementById(`chev-${i}`);
+  body.classList.toggle('open');
+  chev.classList.toggle('open');
+}
+
+// ── SHAREPOINT WRITE ─────────────────────────────────────────────────────────
+async function getToken() {
+  const resp = await fetch(`https://login.microsoftonline.com/${TENANT_ID}/oauth2/v2.0/token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'client_credentials',
+      client_id: CLIENT_ID,
+      client_secret: CLIENT_SECRET,
+      scope: 'https://graph.microsoft.com/.default',
+    })
+  });
+  const data = await resp.json();
+  if (!data.access_token) throw new Error('Auth failed: ' + JSON.stringify(data));
+  return data.access_token;
+}
+
+function setProgress(label, pct) {
+  document.getElementById('progressLabel').textContent = label;
+  document.getElementById('progressBar').style.width = pct + '%';
+}
+
+async function writeToSharePoint() {
+  const entries = (window._parsedEntries || []).filter(e => e.address);
+  if (entries.length === 0) {
+    showError('No valid entries with addresses to write.');
+    return;
+  }
+
+  document.getElementById('progressWrap').style.display = 'block';
+  document.getElementById('successMsg').style.display = 'none';
+  document.getElementById('errorMsg').style.display = 'none';
+
+  try {
+    setProgress('Authenticating with Microsoft...', 10);
+    const token = await getToken();
+    const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
+
+    // Get site ID
+    setProgress('Connecting to SharePoint...', 20);
+    const siteResp = await fetch(
+      `https://graph.microsoft.com/v1.0/sites/${SITE_HOST}:${SITE_PATH}`,
+      { headers }
+    );
+    const siteData = await siteResp.json();
+    const siteId = siteData.id;
+
+    // Get workbook session
+    setProgress('Opening workbook...', 35);
+    const sessionResp = await fetch(
+      `https://graph.microsoft.com/v1.0/sites/${siteId}/drive/items/${FILE_ID}/workbook/createSession`,
+      { method: 'POST', headers, body: JSON.stringify({ persistChanges: true }) }
+    );
+    const sessionData = await sessionResp.json();
+    const sessionId = sessionData.id;
+    const wbHeaders = { ...headers, 'workbook-session-id': sessionId };
+
+    // Group entries by sheet
+    const bySheet = {};
+    for (const e of entries) {
+      if (!bySheet[e.sheet]) bySheet[e.sheet] = [];
+      bySheet[e.sheet].push(e);
+    }
+
+    let written = 0;
+    let flagged = 0;
+    const total = entries.length;
+    const flags = [];
+
+    for (const [sheet, sheetEntries] of Object.entries(bySheet)) {
+      setProgress(`Reading ${sheet}...`, 40);
+
+      // Get used range
+      const rangeResp = await fetch(
+        `https://graph.microsoft.com/v1.0/sites/${siteId}/drive/items/${FILE_ID}/workbook/worksheets/${encodeURIComponent(sheet)}/usedRange`,
+        { headers: wbHeaders }
+      );
+      const rangeData = await rangeResp.json();
+      const values = rangeData.values;
+      if (!values || values.length < 2) continue;
+
+      const headerRow = values[0];
+      const addrColName = ADDR_COL[sheet];
+      const addrColIdx = headerRow.findIndex(h => h === addrColName);
+      if (addrColIdx === -1) continue;
+
+      // Build field col indices
+      const fieldColIndices = {};
+      for (const [fieldKey, colName] of Object.entries(FIELD_MAP)) {
+        const idx = headerRow.findIndex(h => h === colName);
+        if (idx !== -1) fieldColIndices[fieldKey] = idx;
+      }
+
+      for (const entry of sheetEntries) {
+        // Find best matching row
+        let bestRow = -1;
+        let bestScore = 0;
+
+        for (let r = 1; r < values.length; r++) {
+          const cellAddr = values[r][addrColIdx] || '';
+          const score = matchScore(entry.address, cellAddr);
+          if (score > bestScore) {
+            bestScore = score;
+            bestRow = r;
+          }
+        }
+
+        if (bestScore < 75) {
+          flags.push({ entry, reason: `No confident match found (best score: ${bestScore})` });
+          flagged++;
+          continue;
+        }
+
+        if (bestScore < 90) {
+          flags.push({ entry, reason: `Low confidence match (${bestScore}%) — please verify row was updated correctly` });
+          flagged++;
+        }
+
+        // Write each field
+        const excelRow = bestRow + 1; // 1-indexed, +1 for header
+        for (const [fieldKey, colIdx] of Object.entries(fieldColIndices)) {
+          const val = entry.fields[fieldKey];
+          if (!val) continue;
+
+          // Convert col index to Excel letter
+          const colLetter = indexToLetter(colIdx);
+          const cellAddr2 = `${colLetter}${excelRow}`;
+
+          await fetch(
+            `https://graph.microsoft.com/v1.0/sites/${siteId}/drive/items/${FILE_ID}/workbook/worksheets/${encodeURIComponent(sheet)}/range(address='${cellAddr2}')`,
+            { method: 'PATCH', headers: wbHeaders, body: JSON.stringify({ values: [[val]] }) }
+          );
+        }
+
+        written++;
+        setProgress(`Writing entries... (${written}/${total})`, 40 + Math.round((written / total) * 50));
+      }
+    }
+
+    // Close session
+    await fetch(
+      `https://graph.microsoft.com/v1.0/sites/${siteId}/drive/items/${FILE_ID}/workbook/closeSession`,
+      { method: 'POST', headers: wbHeaders }
+    );
+
+    setProgress('Done!', 100);
+    setTimeout(() => {
+      document.getElementById('progressWrap').style.display = 'none';
+
+      let msg = `✓ ${written} entr${written === 1 ? 'y' : 'ies'} written to Master List.`;
+      if (flagged > 0) msg += ` ${flagged} flagged for manual review — see below.`;
+      showSuccess(msg);
+
+      if (flags.length > 0) {
+        const flagDiv = document.getElementById('reviewFlags');
+        flagDiv.innerHTML = flags.map(f => `
+          <div class="review-flag">
+            <strong>⚠ Manual Review: ${f.entry.address}</strong>
+            ${f.reason} — Sheet: ${f.entry.sheet}
+          </div>
+        `).join('');
+      }
+    }, 500);
+
+  } catch (err) {
+    document.getElementById('progressWrap').style.display = 'none';
+    showError('Error: ' + err.message);
+  }
+}
+
+function indexToLetter(idx) {
+  let letter = '';
+  let n = idx + 1;
+  while (n > 0) {
+    const rem = (n - 1) % 26;
+    letter = String.fromCharCode(65 + rem) + letter;
+    n = Math.floor((n - 1) / 26);
+  }
+  return letter;
+}
+
+function showSuccess(msg) {
+  const el = document.getElementById('successMsg');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function showError(msg) {
+  const el = document.getElementById('errorMsg');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function resetTool() {
+  document.getElementById('notesInput').value = '';
+  document.getElementById('resultsPanel').style.display = 'none';
+  document.getElementById('successMsg').style.display = 'none';
+  document.getElementById('errorMsg').style.display = 'none';
+  document.getElementById('reviewFlags').innerHTML = '';
+  window._parsedEntries = null;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+
+// ── UNLOCK ───────────────────────────────────────────────────────────────────
+async function unlock() {
+  const input = document.getElementById('secretInput').value.trim();
+  if (!input) return;
+
+  const btn = document.getElementById('unlockBtn');
+  btn.textContent = 'Verifying...';
+  btn.disabled = true;
+
+  try {
+    const resp = await fetch(`https://login.microsoftonline.com/${TENANT_ID}/oauth2/v2.0/token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'client_credentials',
+        client_id: CLIENT_ID,
+        client_secret: input,
+        scope: 'https://graph.microsoft.com/.default',
+      })
+    });
+    const data = await resp.json();
+    if (data.access_token) {
+      CLIENT_SECRET = input;
+      document.getElementById('unlockOverlay').style.display = 'none';
+    } else {
+      document.getElementById('unlockError').style.display = 'block';
+      btn.textContent = 'Unlock';
+      btn.disabled = false;
+    }
+  } catch(e) {
+    document.getElementById('unlockError').textContent = 'Network error: ' + e.message;
+    document.getElementById('unlockError').style.display = 'block';
+    btn.textContent = 'Unlock';
+    btn.disabled = false;
+  }
+}
+
+// Wire up buttons via addEventListener (more reliable than onclick for local files)
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('unlockBtn').addEventListener('click', unlock);
+  document.getElementById('secretInput').addEventListener('keydown', function(e){ if(e.key==='Enter') unlock(); });
+  document.getElementById('parseBtn').addEventListener('click', parseNotes);
+  document.getElementById('writeBtn').addEventListener('click', writeToSharePoint);
+  document.getElementById('resetBtn').addEventListener('click', resetTool);
+});
+</script>
+</body>
+</html>
