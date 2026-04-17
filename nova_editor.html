@@ -1,0 +1,2955 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nova Editor</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap');
+
+:root {
+  --navy: #1F4E79;
+  --navy-mid: #2E74B5;
+  --navy-light: #D6E4F0;
+  --ink: #0D1B2A;
+  --panel: #162233;
+  --panel-dark: #0D1B2A;
+  --border: #253548;
+  --gray: #6B7A8D;
+  --light: #A8C4E0;
+  --white: #FFFFFF;
+  --green: #1A7F4B;
+  --green-light: #D4EDDA;
+  --amber: #B45309;
+  --amber-light: #FEF3C7;
+  --red: #991B1B;
+  --red-light: #FEE2E2;
+  --mono: 'DM Mono', monospace;
+  --display: 'Syne', sans-serif;
+  --body: 'DM Sans', sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--ink);
+  font-family: var(--body);
+  color: var(--white);
+  min-height: 100vh;
+  font-size: 14px;
+}
+
+/* Unlock screen */
+.unlock-overlay {
+  position: fixed; inset: 0;
+  background: var(--ink);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.unlock-box {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 40px;
+  width: 420px;
+  max-width: 90vw;
+}
+
+.unlock-logo {
+  font-family: var(--display);
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--white);
+  margin-bottom: 6px;
+}
+
+.unlock-logo span { color: var(--navy-light); }
+
+.unlock-sub {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--gray);
+  margin-bottom: 32px;
+}
+
+.unlock-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--navy-light);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.unlock-input-wrap { position: relative; }
+
+.unlock-input {
+  width: 100%;
+  background: var(--panel-dark);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--white);
+  font-family: var(--mono);
+  font-size: 13px;
+  padding: 12px 70px 12px 14px;
+  outline: none;
+  margin-bottom: 16px;
+  transition: border-color 0.2s;
+}
+
+.unlock-input:focus { border-color: var(--navy-mid); }
+
+.toggle-btn {
+  position: absolute;
+  right: 10px; top: 12px;
+  background: transparent;
+  border: 1px solid #3A5068;
+  border-radius: 4px;
+  color: var(--gray);
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.unlock-btn {
+  width: 100%;
+  background: var(--navy-mid);
+  color: var(--white);
+  font-family: var(--display);
+  font-size: 15px;
+  font-weight: 700;
+  border: none;
+  padding: 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.unlock-btn:hover { background: #3A85C8; }
+.unlock-btn:disabled { background: var(--border); cursor: not-allowed; }
+
+.unlock-error {
+  color: var(--red);
+  font-family: var(--mono);
+  font-size: 12px;
+  margin-top: 10px;
+  display: none;
+}
+
+.unlock-note {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--gray);
+  margin-top: 14px;
+  line-height: 1.6;
+}
+
+.user-pick-btn {
+  flex: 1;
+  background: var(--panel-dark);
+  border: 1px solid var(--border);
+  color: var(--gray);
+  padding: 10px;
+  border-radius: 6px;
+  font-family: var(--body);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.user-pick-btn:hover { color: var(--white); border-color: var(--navy-mid); }
+.user-pick-btn.active { background: var(--navy-mid); color: var(--white); border-color: var(--navy-mid); }
+
+/* Header */
+.header {
+  background: var(--navy);
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 2px solid var(--navy-mid);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.logo {
+  font-family: var(--display);
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: var(--white);
+}
+
+.logo span { color: var(--navy-light); }
+
+.status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #4ADE80;
+  display: inline-block;
+  margin-right: 8px;
+  box-shadow: 0 0 6px #4ADE80;
+}
+
+.status-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--navy-light);
+}
+
+/* Main layout */
+.main {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+/* Tab bar */
+.tab-bar {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  margin-bottom: 20px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.tab-btn {
+  background: transparent;
+  color: var(--gray);
+  border: none;
+  padding: 10px 16px;
+  font-family: var(--body);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: all 0.15s;
+}
+
+.tab-btn:hover { color: var(--light); }
+
+.tab-btn.active {
+  color: var(--white);
+  border-bottom-color: var(--navy-mid);
+}
+
+.tab-btn .count {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--gray);
+  margin-left: 6px;
+}
+
+.tab-btn.active .count { color: var(--navy-light); }
+
+/* Filter bar */
+.filter-bar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.search-input {
+  flex: 1;
+  min-width: 200px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--white);
+  padding: 8px 12px;
+  font-family: var(--body);
+  font-size: 13px;
+  outline: none;
+}
+
+.search-input:focus { border-color: var(--navy-mid); }
+
+.filter-select {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--white);
+  padding: 8px 12px;
+  font-family: var(--body);
+  font-size: 13px;
+  outline: none;
+  cursor: pointer;
+}
+
+.action-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  background: var(--navy-mid);
+  color: var(--white);
+  border: none;
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-family: var(--body);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn:hover { background: #3A85C8; }
+.btn:disabled { background: var(--border); cursor: not-allowed; color: var(--gray); }
+
+.btn-secondary {
+  background: var(--panel);
+  border: 1px solid var(--border);
+}
+
+.btn-secondary:hover { background: #1d2f47; border-color: var(--navy-mid); }
+
+.btn-danger { background: var(--red); }
+.btn-danger:hover { background: #B91C1C; }
+
+.btn-success { background: var(--green); }
+.btn-success:hover { background: #1E9457; }
+
+/* Data table */
+.table-wrap {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: auto;
+  max-height: 70vh;
+  position: relative;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+thead {
+  position: sticky;
+  top: 0;
+  background: var(--panel);
+  z-index: 10;
+}
+
+th {
+  background: #1a2d42;
+  color: var(--navy-light);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+th.checkbox-col { width: 30px; padding: 10px 6px; text-align: center; }
+th.source-col { color: var(--gray); background: #142233; }
+th.sortable { cursor: pointer; user-select: none; }
+th.sortable:hover { color: var(--white); }
+th.sorted-asc::after { content: ' ▲'; font-size: 9px; color: var(--navy-mid); }
+th.sorted-desc::after { content: ' ▼'; font-size: 9px; color: var(--navy-mid); }
+
+td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #1a2d42;
+  color: var(--light);
+}
+
+td.checkbox-col { text-align: center; padding: 8px 6px; }
+td.source-col { color: var(--gray); }
+td.editable { cursor: pointer; }
+td.editable:hover { background: #1d2f47; }
+
+tr:hover td { background: #1a2d42; }
+tr.selected td { background: rgba(46, 116, 181, 0.15); }
+tr.selected:hover td { background: rgba(46, 116, 181, 0.25); }
+
+input[type="checkbox"] {
+  cursor: pointer;
+  accent-color: var(--navy-mid);
+}
+
+.priority-high { color: #F87171; font-weight: 600; }
+.priority-med { color: #FBBF24; font-weight: 600; }
+.priority-low { color: var(--gray); }
+
+.status-vacant { color: #F87171; }
+.status-occupied { color: #34D399; }
+.status-unknown { color: var(--gray); }
+
+.yes-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-family: var(--mono);
+  background: var(--green-light);
+  color: var(--green);
+}
+
+.no-pill {
+  color: var(--gray);
+  font-size: 11px;
+  font-family: var(--mono);
+}
+
+.cell-edit-input {
+  background: var(--panel-dark);
+  border: 1px solid var(--navy-mid);
+  color: var(--white);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-family: var(--body);
+  font-size: 13px;
+  width: 100%;
+  outline: none;
+}
+
+/* Loading/empty states */
+.empty-state {
+  padding: 60px 24px;
+  text-align: center;
+  color: var(--gray);
+}
+
+.empty-state .icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+
+.spinner {
+  display: inline-block;
+  width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  vertical-align: middle;
+  margin-right: 8px;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.global-loader {
+  position: fixed;
+  top: 60px; right: 20px;
+  background: var(--panel);
+  border: 1px solid var(--navy-mid);
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--navy-light);
+  display: none;
+  z-index: 200;
+}
+
+/* Toast notifications */
+.toast {
+  position: fixed;
+  bottom: 20px; right: 20px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  padding: 12px 18px;
+  border-radius: 8px;
+  font-family: var(--mono);
+  font-size: 12px;
+  max-width: 340px;
+  z-index: 300;
+  animation: slideIn 0.2s ease-out;
+}
+
+.toast.success { border-left: 3px solid var(--green); color: #6EE7B7; }
+.toast.error { border-left: 3px solid var(--red); color: #FCA5A5; }
+.toast.info { border-left: 3px solid var(--navy-mid); color: var(--navy-light); }
+
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 500;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.modal-overlay.active { display: flex; }
+
+.modal {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-title {
+  font-family: var(--display);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  color: var(--gray);
+  font-size: 22px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.modal-body { padding: 20px; }
+
+.modal-footer {
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.form-row {
+  margin-bottom: 14px;
+}
+
+.form-label {
+  display: block;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--navy-light);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.form-input, .form-select, .form-textarea {
+  width: 100%;
+  background: var(--panel-dark);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--white);
+  padding: 8px 12px;
+  font-family: var(--body);
+  font-size: 13px;
+  outline: none;
+}
+
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  border-color: var(--navy-mid);
+}
+
+.form-textarea { min-height: 80px; resize: vertical; }
+
+.selection-bar {
+  background: rgba(46, 116, 181, 0.15);
+  border: 1px solid var(--navy-mid);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.selection-bar.active { display: flex; }
+
+.selection-count {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--navy-light);
+}
+
+/* Global search results */
+.global-results {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 16px;
+  overflow: hidden;
+  display: none;
+}
+
+.global-results.active { display: block; }
+
+.global-result-header {
+  background: #1a2d42;
+  padding: 10px 14px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--navy-light);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.global-result-item {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.1s;
+  font-size: 13px;
+}
+
+.global-result-item:last-child { border-bottom: none; }
+.global-result-item:hover { background: #1a2d42; }
+
+.global-result-item .addr { color: var(--white); }
+.global-result-item .meta { font-size: 11px; color: var(--gray); margin-top: 2px; }
+
+.dup-warn {
+  background: var(--amber-light);
+  border: 1px solid #FCD34D;
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin-bottom: 10px;
+  color: var(--amber);
+  font-size: 13px;
+}
+
+/* Activity Panel */
+.activity-panel {
+  position: fixed;
+  top: 0; right: 0;
+  width: 420px;
+  max-width: 90vw;
+  height: 100vh;
+  background: var(--panel);
+  border-left: 1px solid var(--border);
+  z-index: 400;
+  display: none;
+  flex-direction: column;
+  box-shadow: -4px 0 20px rgba(0,0,0,0.3);
+}
+
+.activity-panel.active { display: flex; }
+
+.activity-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.activity-title {
+  font-family: var(--display);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.activity-sub {
+  padding: 10px 20px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--gray);
+  line-height: 1.5;
+  border-bottom: 1px solid var(--border);
+}
+
+.activity-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.activity-item {
+  background: var(--panel-dark);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+
+.activity-item.undone {
+  opacity: 0.4;
+  border-style: dashed;
+}
+
+.activity-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.activity-action {
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 500;
+}
+
+.activity-action.edit { background: rgba(46, 116, 181, 0.2); color: var(--navy-light); }
+.activity-action.add { background: var(--green-light); color: var(--green); }
+.activity-action.delete { background: var(--red-light); color: var(--red); }
+.activity-action.bulk { background: var(--amber-light); color: var(--amber); }
+
+.activity-time {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--gray);
+}
+
+.activity-body {
+  font-size: 12px;
+  color: var(--light);
+  line-height: 1.5;
+}
+
+.activity-body .addr { color: var(--white); font-weight: 500; }
+.activity-body .change { color: var(--gray); font-family: var(--mono); font-size: 11px; margin-top: 4px; }
+.activity-body .before { color: #F87171; text-decoration: line-through; }
+.activity-body .after { color: #34D399; }
+
+.activity-undo {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--light);
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+.activity-undo:hover { background: var(--panel); border-color: var(--navy-mid); }
+.activity-undo:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.activity-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--gray);
+  font-size: 13px;
+}
+
+.actions-list {
+  padding: 12px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.action-card {
+  width: 100%;
+  background: var(--panel-dark);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  text-align: left;
+  color: var(--white);
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: var(--body);
+}
+
+.action-card:hover {
+  border-color: var(--navy-mid);
+  background: #1d2f47;
+  transform: translateY(-1px);
+}
+
+.action-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.action-card-desc {
+  font-size: 12px;
+  color: var(--gray);
+  line-height: 1.4;
+}
+
+.action-dialog-body { padding: 20px; }
+
+.action-step {
+  margin-bottom: 16px;
+}
+
+.action-step-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--navy-light);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.condition-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  align-items: center;
+}
+
+.condition-row > * { flex: 1; }
+
+.preview-box {
+  background: var(--panel-dark);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--light);
+  max-height: 200px;
+  overflow-y: auto;
+  margin-top: 10px;
+}
+
+.match-row {
+  padding: 6px 0;
+  border-bottom: 1px solid #1a2d42;
+}
+
+.match-row:last-child { border-bottom: none; }
+
+.merge-group {
+  background: var(--panel-dark);
+  border: 1px solid var(--amber);
+  border-left: 3px solid var(--amber);
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+.merge-group-header {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--amber);
+  margin-bottom: 8px;
+}
+
+.merge-option {
+  padding: 8px 10px;
+  background: #0f1a27;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  margin-bottom: 6px;
+  font-size: 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.merge-option input[type="radio"] { margin-top: 2px; }
+.merge-option-meta { color: var(--gray); font-size: 11px; margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<!-- Unlock screen -->
+<div class="unlock-overlay" id="unlockOverlay">
+  <div class="unlock-box">
+    <div class="unlock-logo">NOVA <span>EDITOR</span></div>
+    <div class="unlock-sub">Master List live editing</div>
+    <div class="unlock-label">Who's using the tool?</div>
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <button class="user-pick-btn" data-user="Jack" id="userJack">Jack</button>
+      <button class="user-pick-btn" data-user="Chris" id="userChris">Chris</button>
+    </div>
+    <div class="unlock-label">Client Secret</div>
+    <div class="unlock-input-wrap">
+      <input type="password" class="unlock-input" id="secretInput" placeholder="Paste your Azure client secret..." />
+      <button class="toggle-btn" id="toggleBtn">SHOW</button>
+    </div>
+    <button class="unlock-btn" id="unlockBtn">Unlock</button>
+    <div class="unlock-error" id="unlockError">Invalid secret — authentication failed.</div>
+    <div class="unlock-note">🔒 Secret lives in memory for this session only and is cleared when you close the tab.</div>
+  </div>
+</div>
+
+<!-- Main app -->
+<div id="app" style="display:none">
+  <div class="header">
+    <div class="logo">NOVA <span>EDITOR</span></div>
+    <div style="display:flex;align-items:center;gap:16px">
+      <button class="btn btn-secondary" id="actionsBtn" style="padding:6px 12px;font-size:12px">⚡ Actions</button>
+      <button class="btn btn-secondary" id="activityBtn" style="padding:6px 12px;font-size:12px">📋 Activity <span id="activityCount" style="color:var(--navy-light);margin-left:4px">0</span></button>
+      <div class="status-label"><span class="status-dot"></span>Connected · <span id="userLabel">—</span></div>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- Global search -->
+    <div class="filter-bar">
+      <input type="text" class="search-input" id="globalSearch" placeholder="🔍 Search across all tabs by address..." />
+      <button class="btn btn-secondary" id="addRowBtn">+ Add Row</button>
+      <button class="btn btn-secondary" id="dupCheckBtn">Duplicate Check</button>
+      <button class="btn btn-secondary" id="refreshBtn">↻ Refresh</button>
+    </div>
+
+    <div class="global-results" id="globalResults"></div>
+
+    <!-- Tab bar -->
+    <div class="tab-bar" id="tabBar"></div>
+
+    <!-- Tab filters -->
+    <div class="filter-bar" id="tabFilters">
+      <input type="text" class="search-input" id="tabSearch" placeholder="Filter this tab..." />
+      <select class="filter-select" id="filterPriority">
+        <option value="">All Priorities</option>
+        <option value="high">High</option>
+        <option value="med">Med</option>
+        <option value="low">Low</option>
+      </select>
+      <select class="filter-select" id="filterStatus">
+        <option value="">All Statuses</option>
+        <option value="vacant">Vacant</option>
+        <option value="occupied">Occupied</option>
+        <option value="unknown">Unknown</option>
+      </select>
+      <select class="filter-select" id="filterPodio">
+        <option value="">All Podio</option>
+        <option value="yes">Yes</option>
+        <option value="no">No</option>
+      </select>
+      <select class="filter-select" id="filterPull">
+        <option value="">All Pulls</option>
+      </select>
+      <button class="btn btn-secondary" id="toggleSource">Show Source Data</button>
+    </div>
+
+    <!-- Selection bar -->
+    <div class="selection-bar" id="selectionBar">
+      <div class="selection-count"><span id="selCount">0</span> rows selected</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn" id="bulkEditBtn">Bulk Edit</button>
+        <button class="btn btn-danger" id="bulkDeleteBtn">Delete</button>
+        <button class="btn btn-secondary" id="clearSelBtn">Clear</button>
+      </div>
+    </div>
+
+    <!-- Data table -->
+    <div class="table-wrap">
+      <table id="dataTable"></table>
+      <div id="emptyState" class="empty-state" style="display:none">
+        <div class="icon">∅</div>
+        <div>No records match your filters</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Global loader -->
+<div class="global-loader" id="globalLoader"><span class="spinner"></span><span id="loaderText">Loading...</span></div>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="editModalTitle">Edit Row</div>
+      <button class="modal-close" data-close="editModal">×</button>
+    </div>
+    <div class="modal-body" id="editModalBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close="editModal">Cancel</button>
+      <button class="btn btn-success" id="saveEditBtn">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Row Modal -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Add New Row</div>
+      <button class="modal-close" data-close="addModal">×</button>
+    </div>
+    <div class="modal-body" id="addModalBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close="addModal">Cancel</button>
+      <button class="btn btn-success" id="saveAddBtn">Add Row</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bulk Edit Modal -->
+<div class="modal-overlay" id="bulkModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Bulk Edit <span id="bulkCount" style="color:var(--gray);font-weight:400"></span></div>
+      <button class="modal-close" data-close="bulkModal">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="color:var(--gray);font-size:12px;margin-bottom:14px">Leave a field blank to keep existing values. Only set fields will be updated across all selected rows.</div>
+      <div id="bulkModalBody"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close="bulkModal">Cancel</button>
+      <button class="btn btn-success" id="saveBulkBtn">Apply to Selected</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <div class="modal-title" style="color:#F87171">⚠ Confirm Deletion</div>
+      <button class="modal-close" data-close="deleteModal">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="margin-bottom:14px">You are about to delete <strong id="deleteCount" style="color:var(--white)"></strong> row(s) from <strong id="deleteTab" style="color:var(--white)"></strong>.</div>
+      <div style="color:var(--amber);font-size:12px;margin-bottom:14px;font-family:var(--mono)">This action is logged but difficult to undo. Type <strong>DELETE</strong> to confirm.</div>
+      <input type="text" class="form-input" id="deleteConfirmInput" placeholder="Type DELETE to confirm" />
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close="deleteModal">Cancel</button>
+      <button class="btn btn-danger" id="confirmDeleteBtn" disabled>Delete Rows</button>
+    </div>
+  </div>
+</div>
+
+<!-- Duplicate Check Modal -->
+<div class="modal-overlay" id="dupModal">
+  <div class="modal" style="max-width:700px">
+    <div class="modal-header">
+      <div class="modal-title">Duplicate Address Check</div>
+      <button class="modal-close" data-close="dupModal">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="color:var(--gray);font-size:12px;margin-bottom:10px">Paste addresses (one per line). The tool will check every tab and flag any matches found in the Master List.</div>
+      <textarea class="form-textarea" id="dupInput" placeholder="4730 Hickorygate Dr 77373&#10;5719 Spellman Rd&#10;..." style="min-height:140px"></textarea>
+      <div id="dupResults" style="margin-top:14px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close="dupModal">Close</button>
+      <button class="btn" id="runDupBtn">Run Check</button>
+    </div>
+  </div>
+</div>
+
+<!-- Actions Panel -->
+<div class="activity-panel" id="actionsPanel" style="width:480px">
+  <div class="activity-header">
+    <div class="activity-title">⚡ Actions</div>
+    <button class="modal-close" id="closeActionsBtn">×</button>
+  </div>
+  <div class="activity-sub">Power tools for bulk operations. Every action is logged and can be undone.</div>
+  <div class="actions-list">
+    <button class="action-card" data-action="bulk-add">
+      <div class="action-card-title">📥 Bulk Add Rows</div>
+      <div class="action-card-desc">Paste parser-format entries to add multiple rows at once</div>
+    </button>
+    <button class="action-card" data-action="dup-check">
+      <div class="action-card-title">🔍 Duplicate Detection</div>
+      <div class="action-card-desc">Scan all tabs for duplicate addresses, optionally merge them</div>
+    </button>
+    <button class="action-card" data-action="conditional">
+      <div class="action-card-title">⚙️ Conditional Bulk Update</div>
+      <div class="action-card-desc">"Where column X equals Y, set column Z to W" — across any tab</div>
+    </button>
+    <button class="action-card" data-action="find-replace">
+      <div class="action-card-title">🔄 Find &amp; Replace</div>
+      <div class="action-card-desc">Replace text in any column across one or all tabs</div>
+    </button>
+  </div>
+</div>
+
+<!-- Activity Panel -->
+<div class="activity-panel" id="activityPanel">
+  <div class="activity-header">
+    <div class="activity-title">Session Activity</div>
+    <button class="modal-close" id="closeActivityBtn">×</button>
+  </div>
+  <div class="activity-sub">All edits are logged to the Master List Audit Log tab. Undo reverts changes made in this browser session only.</div>
+  <div id="activityList" class="activity-list"></div>
+</div>
+
+<!-- Bulk Add Modal -->
+<div class="modal-overlay" id="bulkAddModal">
+  <div class="modal" style="max-width:720px">
+    <div class="modal-header">
+      <div class="modal-title">📥 Bulk Add Rows</div>
+      <button class="modal-close" data-close="bulkAddModal">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="color:var(--gray);font-size:12px;margin-bottom:10px">Paste entries in parser format. Each entry must start with a tab tag. The tool will auto-detect duplicates and let you decide per-entry.</div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--navy-light);margin-bottom:10px">
+        Supported tags: [PROBATE-HTX] [PROBATE-OOH] [TAX-SUIT] [TAX-JUDG] [FORECLOSURE] [PUB-NUIS] [TAX-AUC]
+      </div>
+      <textarea class="form-textarea" id="bulkAddInput" placeholder="[PROBATE-HTX]&#10;Address: 5719 Spellman Rd&#10;Priority: high&#10;Status: vacant&#10;..." style="min-height:240px"></textarea>
+      <div id="bulkAddPreview" style="margin-top:14px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close="bulkAddModal">Cancel</button>
+      <button class="btn" id="previewBulkAddBtn">Preview</button>
+      <button class="btn btn-success" id="executeBulkAddBtn" disabled>Add All Rows</button>
+    </div>
+  </div>
+</div>
+
+<!-- Duplicate Detection Modal -->
+<div class="modal-overlay" id="dupDetectModal">
+  <div class="modal" style="max-width:780px">
+    <div class="modal-header">
+      <div class="modal-title">🔍 Duplicate Detection</div>
+      <button class="modal-close" data-close="dupDetectModal">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="color:var(--gray);font-size:12px;margin-bottom:12px">Scans all tabs for addresses that appear more than once. Groups them so you can pick which to keep and merge field data.</div>
+      <button class="btn" id="runDupDetectBtn">Scan All Tabs</button>
+      <div id="dupDetectResults" style="margin-top:14px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close="dupDetectModal">Close</button>
+      <button class="btn btn-success" id="executeMergeBtn" style="display:none">Apply Merges</button>
+    </div>
+  </div>
+</div>
+
+<!-- Conditional Update Modal -->
+<div class="modal-overlay" id="conditionalModal">
+  <div class="modal" style="max-width:700px">
+    <div class="modal-header">
+      <div class="modal-title">⚙️ Conditional Bulk Update</div>
+      <button class="modal-close" data-close="conditionalModal">×</button>
+    </div>
+    <div class="action-dialog-body">
+      <div class="action-step">
+        <div class="action-step-label">Target tab</div>
+        <select class="form-select" id="condTab"></select>
+      </div>
+      <div class="action-step">
+        <div class="action-step-label">Conditions (ALL must match)</div>
+        <div id="condRows"></div>
+        <button class="btn btn-secondary" id="addCondBtn" style="padding:4px 10px;font-size:12px;margin-top:6px">+ Add condition</button>
+      </div>
+      <div class="action-step">
+        <div class="action-step-label">Then set</div>
+        <div class="condition-row">
+          <select class="form-select" id="condSetCol"></select>
+          <select class="form-select" id="condSetOp">
+            <option value="to">to</option>
+          </select>
+          <input type="text" class="form-input" id="condSetVal" placeholder="value" />
+        </div>
+      </div>
+      <button class="btn" id="previewCondBtn">Preview matches</button>
+      <div id="condPreview" style="margin-top:12px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close="conditionalModal">Cancel</button>
+      <button class="btn btn-success" id="executeCondBtn" disabled>Apply Update</button>
+    </div>
+  </div>
+</div>
+
+<!-- Find & Replace Modal -->
+<div class="modal-overlay" id="findReplaceModal">
+  <div class="modal" style="max-width:620px">
+    <div class="modal-header">
+      <div class="modal-title">🔄 Find &amp; Replace</div>
+      <button class="modal-close" data-close="findReplaceModal">×</button>
+    </div>
+    <div class="action-dialog-body">
+      <div class="action-step">
+        <div class="action-step-label">Tab</div>
+        <select class="form-select" id="frTab"><option value="__all__">All tabs</option></select>
+      </div>
+      <div class="action-step">
+        <div class="action-step-label">Column</div>
+        <select class="form-select" id="frCol"></select>
+      </div>
+      <div class="action-step">
+        <div class="action-step-label">Find</div>
+        <input type="text" class="form-input" id="frFind" />
+      </div>
+      <div class="action-step">
+        <div class="action-step-label">Replace with</div>
+        <input type="text" class="form-input" id="frReplace" />
+      </div>
+      <div class="action-step">
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--light)">
+          <input type="checkbox" id="frCaseSensitive"/> Case sensitive
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--light);margin-top:6px">
+          <input type="checkbox" id="frWholeCell"/> Match whole cell only
+        </label>
+      </div>
+      <button class="btn" id="previewFrBtn">Preview</button>
+      <div id="frPreview" style="margin-top:12px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close="findReplaceModal">Cancel</button>
+      <button class="btn btn-success" id="executeFrBtn" disabled>Replace All</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────────────────────────
+const TENANT_ID  = '4f3dc49e-04be-4295-abda-96556e7a7f5b';
+const CLIENT_ID  = '7c538589-e77a-4e0e-a035-50e9669c98fb';
+const SITE_HOST  = 'novapropertysolutions.sharepoint.com';
+const SITE_PATH  = '/sites/NovaPropertySolutions';
+const FILE_ID    = '722c05b7-d3b7-4fc7-b9ab-b3d68eef0d58';
+const WORKER_URL = 'https://nova-auth.jackmorgheim.workers.dev';
+
+let CLIENT_SECRET = null;
+let ACCESS_TOKEN  = null;
+let SITE_ID       = null;
+let CURRENT_USER  = null;
+
+// Audit log tab name and columns
+const AUDIT_TAB = 'Audit Log';
+const AUDIT_COLS = ['Timestamp', 'User', 'Action', 'Tab', 'Row', 'Address', 'Column', 'Before', 'After'];
+
+// Activity log (session-only, in memory)
+// Each entry: { id, timestamp, user, action, tab, excelRow, address, changes: [{col, colIdx, before, after}], undone, deletedRowData }
+const ACTIVITY = [];
+
+// Sheet configuration
+const TABS = [
+  'Tax Auction',
+  'Probate - Out of Houston',
+  'Probate - Houston',
+  'Taxes Under Suit',
+  'Taxes Under Judgement',
+  'Order Public Nuisance',
+  'Foreclosures'
+];
+
+const ADDR_COL = {
+  'Probate - Houston':        'Address of Deceased',
+  'Probate - Out of Houston': 'Address of Deceased',
+  'Taxes Under Suit':         'Address',
+  'Taxes Under Judgement':    'Address',
+  'Foreclosures':             'Address',
+  'Order Public Nuisance':    'Address',
+  'Tax Auction':              'Address',
+};
+
+// Field columns (editable)
+const FIELD_COLS = ['Pull', 'Priority', 'Status', 'Contact', 'Sticky', 'Door Knocked', 'Podio', 'Notes', 'Called Other Source', 'Called Batch/IDI'];
+
+// Cache: tab -> { headers: [], rows: [[]], loadedAt: ts }
+const CACHE = {};
+let CURRENT_TAB = TABS[0];
+let SORT_STATE = { col: null, dir: 'asc' };
+let SELECTED_ROWS = new Set();
+let SHOW_SOURCE = false;
+
+// ── HELPERS ─────────────────────────────────────────────────────────────────
+function toast(msg, type = 'info', duration = 3000) {
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), duration);
+}
+
+function showLoader(text = 'Loading...') {
+  document.getElementById('loaderText').textContent = text;
+  document.getElementById('globalLoader').style.display = 'block';
+}
+function hideLoader() { document.getElementById('globalLoader').style.display = 'none'; }
+
+function indexToLetter(idx) {
+  let letter = '';
+  let n = idx + 1;
+  while (n > 0) {
+    const rem = (n - 1) % 26;
+    letter = String.fromCharCode(65 + rem) + letter;
+    n = Math.floor((n - 1) / 26);
+  }
+  return letter;
+}
+
+function normalizeAddr(a) {
+  if (!a) return '';
+  return String(a).toLowerCase()
+    .replace(/\b(street|str)\b/g, 'st')
+    .replace(/\b(avenue|ave)\b/g, 'ave')
+    .replace(/\b(road)\b/g, 'rd')
+    .replace(/\b(drive)\b/g, 'dr')
+    .replace(/\b(lane)\b/g, 'ln')
+    .replace(/\b(court)\b/g, 'ct')
+    .replace(/\b(boulevard|blvd)\b/g, 'blvd')
+    .replace(/,.*$/, '')
+    .replace(/[^a-z0-9\s]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// ── AUTH ────────────────────────────────────────────────────────────────────
+async function authenticate(secret) {
+  const resp = await fetch(WORKER_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ secret })
+  });
+  return await resp.json();
+}
+
+async function getToken() {
+  if (ACCESS_TOKEN) return ACCESS_TOKEN;
+  const data = await authenticate(CLIENT_SECRET);
+  if (!data.access_token) throw new Error('Auth failed');
+  ACCESS_TOKEN = data.access_token;
+  // Token expires in 1hr, clear after 55min
+  setTimeout(() => { ACCESS_TOKEN = null; }, 55 * 60 * 1000);
+  return ACCESS_TOKEN;
+}
+
+async function getSiteId() {
+  if (SITE_ID) return SITE_ID;
+  const token = await getToken();
+  const resp = await fetch(
+    `https://graph.microsoft.com/v1.0/sites/${SITE_HOST}:${SITE_PATH}`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  const data = await resp.json();
+  SITE_ID = data.id;
+  return SITE_ID;
+}
+
+async function graphFetch(path, options = {}) {
+  const token = await getToken();
+  const siteId = await getSiteId();
+  const url = `https://graph.microsoft.com/v1.0/sites/${siteId}/drive/items/${FILE_ID}${path}`;
+  const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', ...(options.headers || {}) };
+  return await fetch(url, { ...options, headers });
+}
+
+// ── DATA LOADING ────────────────────────────────────────────────────────────
+async function loadTab(tab, force = false) {
+  if (!force && CACHE[tab]) return CACHE[tab];
+  showLoader(`Loading ${tab}...`);
+  try {
+    const resp = await graphFetch(`/workbook/worksheets/${encodeURIComponent(tab)}/usedRange`);
+    const data = await resp.json();
+    if (!data.values) throw new Error('No data returned');
+    const headers = data.values[0];
+    const rows = data.values.slice(1);
+    CACHE[tab] = { headers, rows, loadedAt: Date.now() };
+    return CACHE[tab];
+  } finally {
+    hideLoader();
+  }
+}
+
+async function loadAllTabs() {
+  showLoader('Loading all tabs...');
+  try {
+    for (const tab of TABS) {
+      await loadTab(tab);
+    }
+  } finally {
+    hideLoader();
+  }
+}
+
+// ── AUDIT LOG ──────────────────────────────────────────────────────────────
+async function ensureAuditTab() {
+  // Check if audit tab exists, create if not
+  if (CACHE[AUDIT_TAB]) return;
+  try {
+    const resp = await graphFetch(`/workbook/worksheets/${encodeURIComponent(AUDIT_TAB)}`);
+    if (resp.ok) {
+      // Tab exists, load it
+      await loadTab(AUDIT_TAB);
+      return;
+    }
+  } catch(e) {}
+
+  // Create the tab
+  try {
+    const createResp = await graphFetch('/workbook/worksheets/add', {
+      method: 'POST',
+      body: JSON.stringify({ name: AUDIT_TAB })
+    });
+    if (!createResp.ok) {
+      const err = await createResp.json();
+      console.error('Could not create audit tab:', err);
+      return;
+    }
+    // Write headers
+    const endCol = indexToLetter(AUDIT_COLS.length - 1);
+    await graphFetch(
+      `/workbook/worksheets/${encodeURIComponent(AUDIT_TAB)}/range(address='A1:${endCol}1')`,
+      { method: 'PATCH', body: JSON.stringify({ values: [AUDIT_COLS] }) }
+    );
+    CACHE[AUDIT_TAB] = { headers: AUDIT_COLS, rows: [], loadedAt: Date.now() };
+  } catch(e) {
+    console.error('Audit tab setup failed:', e);
+  }
+}
+
+async function writeAuditLog(entries) {
+  // entries: array of [timestamp, user, action, tab, row, address, column, before, after]
+  if (entries.length === 0) return;
+  try {
+    await ensureAuditTab();
+    const existing = CACHE[AUDIT_TAB] ? CACHE[AUDIT_TAB].rows.length : 0;
+    const startRow = existing + 2;
+    const endRow = startRow + entries.length - 1;
+    const endCol = indexToLetter(AUDIT_COLS.length - 1);
+    await graphFetch(
+      `/workbook/worksheets/${encodeURIComponent(AUDIT_TAB)}/range(address='A${startRow}:${endCol}${endRow}')`,
+      { method: 'PATCH', body: JSON.stringify({ values: entries }) }
+    );
+    if (CACHE[AUDIT_TAB]) {
+      entries.forEach(e => CACHE[AUDIT_TAB].rows.push(e));
+    }
+  } catch(e) {
+    console.error('Audit log write failed:', e);
+  }
+}
+
+function logActivity(entry) {
+  entry.id = Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+  entry.timestamp = new Date();
+  entry.user = CURRENT_USER;
+  entry.undone = false;
+  ACTIVITY.unshift(entry);
+  updateActivityPanel();
+
+  if (entry._suppressAuditWrite) return;
+
+  // Build audit log rows for each field change
+  const auditRows = [];
+  const ts = entry.timestamp.toISOString();
+  const addr = entry.address || '';
+
+  if (entry.action === 'edit' || entry.action === 'bulk-edit') {
+    entry.changes.forEach(c => {
+      auditRows.push([ts, entry.user, entry.action, entry.tab, entry.excelRow || '', addr, c.col, c.before || '', c.after || '']);
+    });
+  } else if (entry.action === 'add') {
+    auditRows.push([ts, entry.user, 'add', entry.tab, entry.excelRow, addr, '(new row)', '', 'row added']);
+  } else if (entry.action === 'delete') {
+    auditRows.push([ts, entry.user, 'delete', entry.tab, entry.excelRow, addr, '(row)', 'row deleted', '']);
+  } else if (entry.action === 'group') {
+    // Group: entry.subEntries contains individual row changes
+    entry.subEntries.forEach(sub => {
+      if (sub.action === 'edit') {
+        sub.changes.forEach(c => {
+          auditRows.push([ts, entry.user, entry.groupType || 'bulk', sub.tab, sub.excelRow || '', sub.address || '', c.col, c.before || '', c.after || '']);
+        });
+      } else if (sub.action === 'add') {
+        auditRows.push([ts, entry.user, entry.groupType || 'bulk-add', sub.tab, sub.excelRow, sub.address || '', '(new row)', '', 'row added']);
+      } else if (sub.action === 'delete') {
+        auditRows.push([ts, entry.user, entry.groupType || 'bulk-delete', sub.tab, sub.excelRow, sub.address || '', '(row)', 'row deleted', '']);
+      }
+    });
+  }
+
+  writeAuditLog(auditRows);
+}
+
+async function undoActivity(id) {
+  const entry = ACTIVITY.find(e => e.id === id);
+  if (!entry || entry.undone) return;
+
+  try {
+    if (entry.action === 'edit' || entry.action === 'bulk-edit') {
+      // Batch the undo writes
+      const ops = entry.changes.map(c => ({ tab: entry.tab, excelRow: entry.excelRow, colIdx: c.colIdx, value: c.before }));
+      await batchWriteCells(ops);
+    } else if (entry.action === 'add') {
+      await deleteRow(entry.tab, entry.excelRow);
+    } else if (entry.action === 'delete') {
+      const newRow = await appendRow(entry.tab, entry.deletedRowData);
+      entry.reAddedAt = newRow;
+    } else if (entry.action === 'group') {
+      // Undo each sub-entry in reverse order
+      const subs = [...entry.subEntries].reverse();
+      const editOps = [];
+      for (const sub of subs) {
+        if (sub.action === 'edit') {
+          sub.changes.forEach(c => {
+            editOps.push({ tab: sub.tab, excelRow: sub.excelRow, colIdx: c.colIdx, value: c.before });
+          });
+        }
+      }
+      if (editOps.length > 0) await batchWriteCells(editOps);
+
+      // Handle adds (delete them) and deletes (re-add)
+      // Adds: delete rows in descending order to preserve row numbers
+      const adds = subs.filter(s => s.action === 'add').sort((a, b) => b.excelRow - a.excelRow);
+      for (const a of adds) {
+        try { await deleteRow(a.tab, a.excelRow); } catch(e) { console.error(e); }
+      }
+      const deletes = subs.filter(s => s.action === 'delete');
+      for (const d of deletes) {
+        try { await appendRow(d.tab, d.deletedRowData); } catch(e) { console.error(e); }
+      }
+    }
+
+    entry.undone = true;
+    const auditRow = [
+      new Date().toISOString(), CURRENT_USER, 'undo', entry.tab || '(multi)',
+      entry.excelRow || '', entry.address || '',
+      `(undo ${entry.action}${entry.groupType ? ' - ' + entry.groupType : ''})`, '', ''
+    ];
+    await writeAuditLog([auditRow]);
+
+    updateActivityPanel();
+    renderTable();
+    toast('Action reverted', 'success');
+  } catch(e) {
+    toast('Undo failed: ' + e.message, 'error', 5000);
+  }
+}
+
+function updateActivityPanel() {
+  const list = document.getElementById('activityList');
+  const countEl = document.getElementById('activityCount');
+  countEl.textContent = ACTIVITY.filter(e => !e.undone).length;
+
+  if (ACTIVITY.length === 0) {
+    list.innerHTML = '<div class="activity-empty">No activity yet in this session.</div>';
+    return;
+  }
+
+  list.innerHTML = ACTIVITY.map(e => {
+    const time = e.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const actionClass = e.action === 'group' ? 'bulk' : (e.action.includes('bulk') ? 'bulk' : e.action);
+    let actionLabel;
+    if (e.action === 'group') {
+      actionLabel = (e.groupType || 'BULK').toUpperCase();
+    } else {
+      actionLabel = e.action === 'bulk-edit' ? 'BULK' : e.action.toUpperCase();
+    }
+
+    let bodyHtml = '';
+    if (e.action === 'edit') {
+      bodyHtml = `<div class="addr">${escapeHtml(e.address || 'Row ' + e.excelRow)}</div>`;
+      e.changes.forEach(c => {
+        bodyHtml += `<div class="change">${escapeHtml(c.col)}: <span class="before">${escapeHtml(c.before || '(empty)')}</span> → <span class="after">${escapeHtml(c.after || '(empty)')}</span></div>`;
+      });
+    } else if (e.action === 'bulk-edit') {
+      bodyHtml = `<div class="addr">${e.changes.length} change(s) across ${e.rowCount} rows</div>`;
+      bodyHtml += `<div class="change">${e.changes.slice(0, 3).map(c => `${escapeHtml(c.col)} → ${escapeHtml(c.after)}`).join(', ')}${e.changes.length > 3 ? '...' : ''}</div>`;
+    } else if (e.action === 'add') {
+      bodyHtml = `<div class="addr">Added: ${escapeHtml(e.address || 'Row ' + e.excelRow)}</div>`;
+      bodyHtml += `<div class="change">${e.tab} · row ${e.excelRow}</div>`;
+    } else if (e.action === 'delete') {
+      bodyHtml = `<div class="addr">Deleted: ${escapeHtml(e.address || 'Row ' + e.excelRow)}</div>`;
+      bodyHtml += `<div class="change">${e.tab} · row ${e.excelRow}</div>`;
+    } else if (e.action === 'group') {
+      const n = e.subEntries.length;
+      bodyHtml = `<div class="addr">${escapeHtml(e.description || `${n} changes`)}</div>`;
+      bodyHtml += `<div class="change">${n} row${n===1?'':'s'} affected${e.tabsAffected ? ' in ' + e.tabsAffected.join(', ') : ''}</div>`;
+    }
+
+    const undoBtn = e.undone
+      ? `<button class="activity-undo" disabled>✓ Undone</button>`
+      : `<button class="activity-undo" data-undo-id="${e.id}">↶ Undo ${e.action === 'group' ? 'all' : ''}</button>`;
+
+    const tabDisplay = e.action === 'group' ? (e.tabsAffected || []).join(', ') : e.tab;
+
+    return `<div class="activity-item ${e.undone ? 'undone' : ''}">
+      <div class="activity-item-header">
+        <div><span class="activity-action ${actionClass}">${actionLabel}</span> <span style="color:var(--gray);font-size:11px">· ${escapeHtml(tabDisplay || '')}</span></div>
+        <div class="activity-time">${time}</div>
+      </div>
+      <div class="activity-body">${bodyHtml}</div>
+      ${undoBtn}
+    </div>`;
+  }).join('');
+
+  list.querySelectorAll('[data-undo-id]').forEach(btn => {
+    btn.addEventListener('click', () => undoActivity(btn.dataset.undoId));
+  });
+}
+
+// ── CELL WRITE ──────────────────────────────────────────────────────────────
+async function writeCell(tab, excelRow, colIdx, value) {
+  const colLetter = indexToLetter(colIdx);
+  const addr = `${colLetter}${excelRow}`;
+  const resp = await graphFetch(
+    `/workbook/worksheets/${encodeURIComponent(tab)}/range(address='${addr}')`,
+    { method: 'PATCH', body: JSON.stringify({ values: [[value]] }) }
+  );
+  if (!resp.ok) {
+    const err = await resp.json();
+    throw new Error(err.error?.message || 'Write failed');
+  }
+  return true;
+}
+
+async function writeRow(tab, excelRow, updates) {
+  // updates: { colIdx: value }
+  const headers = CACHE[tab].headers;
+  const cache = CACHE[tab].rows[excelRow - 2]; // excelRow is 1-indexed with header at 1
+  for (const [colIdx, val] of Object.entries(updates)) {
+    await writeCell(tab, excelRow, parseInt(colIdx), val);
+    if (cache) cache[parseInt(colIdx)] = val;
+  }
+}
+
+// Batch writes: up to 20 cell writes per Graph API call (~10x speedup)
+// ops: array of { tab, excelRow, colIdx, value }
+async function batchWriteCells(ops) {
+  if (ops.length === 0) return { success: 0, failed: 0 };
+  const token = await getToken();
+  const siteId = await getSiteId();
+  let success = 0, failed = 0;
+
+  for (let i = 0; i < ops.length; i += 20) {
+    const chunk = ops.slice(i, i + 20);
+    const requests = chunk.map((op, idx) => {
+      const colLetter = indexToLetter(op.colIdx);
+      const addr = `${colLetter}${op.excelRow}`;
+      return {
+        id: String(idx),
+        method: 'PATCH',
+        url: `/sites/${siteId}/drive/items/${FILE_ID}/workbook/worksheets/${encodeURIComponent(op.tab)}/range(address='${addr}')`,
+        headers: { 'Content-Type': 'application/json' },
+        body: { values: [[op.value]] }
+      };
+    });
+    try {
+      const resp = await fetch('https://graph.microsoft.com/v1.0/$batch', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requests })
+      });
+      const data = await resp.json();
+      (data.responses || []).forEach(r => {
+        const op = chunk[parseInt(r.id)];
+        if (r.status >= 200 && r.status < 300) {
+          success++;
+          const cache = CACHE[op.tab]?.rows[op.excelRow - 2];
+          if (cache) cache[op.colIdx] = op.value;
+        } else {
+          failed++;
+          console.error('Batch cell write failed:', op, r);
+        }
+      });
+    } catch(e) {
+      failed += chunk.length;
+      console.error('Batch request failed:', e);
+    }
+  }
+  return { success, failed };
+}
+
+async function appendRow(tab, rowData) {
+  // rowData is array matching headers length
+  const { headers, rows } = CACHE[tab];
+  const newExcelRow = rows.length + 2;
+  const endCol = indexToLetter(headers.length - 1);
+  const resp = await graphFetch(
+    `/workbook/worksheets/${encodeURIComponent(tab)}/range(address='A${newExcelRow}:${endCol}${newExcelRow}')`,
+    { method: 'PATCH', body: JSON.stringify({ values: [rowData] }) }
+  );
+  if (!resp.ok) throw new Error('Append failed');
+  rows.push(rowData);
+  return newExcelRow;
+}
+
+async function deleteRow(tab, excelRow) {
+  const resp = await graphFetch(
+    `/workbook/worksheets/${encodeURIComponent(tab)}/range(address='${excelRow}:${excelRow}')/delete`,
+    { method: 'POST', body: JSON.stringify({ shift: 'Up' }) }
+  );
+  if (!resp.ok) {
+    const err = await resp.json();
+    throw new Error(err.error?.message || 'Delete failed');
+  }
+  // Update cache
+  CACHE[tab].rows.splice(excelRow - 2, 1);
+  return true;
+}
+
+// ── RENDERING ───────────────────────────────────────────────────────────────
+function renderTabs() {
+  const bar = document.getElementById('tabBar');
+  bar.innerHTML = TABS.map(t => {
+    const count = CACHE[t] ? CACHE[t].rows.length : '...';
+    const active = t === CURRENT_TAB ? 'active' : '';
+    return `<button class="tab-btn ${active}" data-tab="${t}">${t} <span class="count">${count}</span></button>`;
+  }).join('');
+  bar.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      CURRENT_TAB = btn.dataset.tab;
+      SELECTED_ROWS.clear();
+      renderTabs();
+      renderTable();
+      updatePullFilter();
+    });
+  });
+}
+
+function updatePullFilter() {
+  const data = CACHE[CURRENT_TAB];
+  if (!data) return;
+  const pullIdx = data.headers.indexOf('Pull');
+  if (pullIdx === -1) return;
+  const pulls = new Set();
+  data.rows.forEach(r => { if (r[pullIdx]) pulls.add(String(r[pullIdx])); });
+  const sel = document.getElementById('filterPull');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">All Pulls</option>' +
+    [...pulls].sort().map(p => `<option value="${p}">Pull ${p}</option>`).join('');
+  sel.value = current;
+}
+
+function getFilteredRows() {
+  const data = CACHE[CURRENT_TAB];
+  if (!data) return { headers: [], rows: [] };
+  const { headers, rows } = data;
+
+  const search = document.getElementById('tabSearch').value.trim().toLowerCase();
+  const fPri = document.getElementById('filterPriority').value;
+  const fStatus = document.getElementById('filterStatus').value;
+  const fPodio = document.getElementById('filterPodio').value;
+  const fPull = document.getElementById('filterPull').value;
+
+  const addrIdx = headers.indexOf(ADDR_COL[CURRENT_TAB]);
+  const priIdx = headers.indexOf('Priority');
+  const statusIdx = headers.indexOf('Status');
+  const podioIdx = headers.indexOf('Podio');
+  const pullIdx = headers.indexOf('Pull');
+
+  let filtered = rows.map((r, i) => ({ row: r, excelRow: i + 2 }));
+
+  if (search) {
+    filtered = filtered.filter(r =>
+      r.row.some(v => String(v || '').toLowerCase().includes(search))
+    );
+  }
+  if (fPri && priIdx !== -1) filtered = filtered.filter(r => String(r.row[priIdx] || '').toLowerCase() === fPri);
+  if (fStatus && statusIdx !== -1) filtered = filtered.filter(r => String(r.row[statusIdx] || '').toLowerCase() === fStatus);
+  if (fPodio && podioIdx !== -1) filtered = filtered.filter(r => String(r.row[podioIdx] || '').toLowerCase() === fPodio);
+  if (fPull && pullIdx !== -1) filtered = filtered.filter(r => String(r.row[pullIdx] || '') === fPull);
+
+  if (SORT_STATE.col !== null) {
+    const idx = SORT_STATE.col;
+    filtered.sort((a, b) => {
+      const va = String(a.row[idx] || '');
+      const vb = String(b.row[idx] || '');
+      const cmp = va.localeCompare(vb, undefined, { numeric: true });
+      return SORT_STATE.dir === 'asc' ? cmp : -cmp;
+    });
+  }
+
+  return { headers, rows: filtered };
+}
+
+function renderCellValue(val, colName) {
+  if (val === null || val === undefined || val === '') return '';
+  const str = String(val);
+  const lower = str.toLowerCase();
+
+  if (colName === 'Priority') {
+    if (lower === 'high') return `<span class="priority-high">High</span>`;
+    if (lower === 'med') return `<span class="priority-med">Med</span>`;
+    if (lower === 'low') return `<span class="priority-low">Low</span>`;
+  }
+  if (colName === 'Status') {
+    if (lower === 'vacant') return `<span class="status-vacant">Vacant</span>`;
+    if (lower === 'occupied') return `<span class="status-occupied">Occupied</span>`;
+    if (lower === 'unknown') return `<span class="status-unknown">Unknown</span>`;
+  }
+  if (['Sticky', 'Door Knocked', 'Podio', 'Called Other Source', 'Called Batch/IDI'].includes(colName)) {
+    if (lower === 'yes') return `<span class="yes-pill">yes</span>`;
+    if (lower === 'no') return `<span class="no-pill">no</span>`;
+  }
+  return escapeHtml(str);
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+}
+
+function renderTable() {
+  const { headers, rows } = getFilteredRows();
+  const table = document.getElementById('dataTable');
+  const empty = document.getElementById('emptyState');
+
+  if (!headers.length) {
+    table.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+
+  // Column visibility: field cols always, source cols only if toggled
+  const visibleCols = headers.map((h, i) => ({
+    idx: i, name: h, isField: FIELD_COLS.includes(h)
+  })).filter(c => SHOW_SOURCE || c.isField);
+
+  // Header row
+  let html = '<thead><tr>';
+  html += '<th class="checkbox-col"><input type="checkbox" id="selectAll"/></th>';
+  visibleCols.forEach(c => {
+    const sortClass = SORT_STATE.col === c.idx
+      ? (SORT_STATE.dir === 'asc' ? 'sorted-asc' : 'sorted-desc') : '';
+    const cls = [c.isField ? '' : 'source-col', 'sortable', sortClass].filter(Boolean).join(' ');
+    html += `<th class="${cls}" data-col="${c.idx}">${c.name}</th>`;
+  });
+  html += '<th style="width:60px"></th>'; // actions
+  html += '</tr></thead><tbody>';
+
+  if (rows.length === 0) {
+    table.innerHTML = html + '</tbody>';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  rows.forEach(r => {
+    const checked = SELECTED_ROWS.has(r.excelRow) ? 'checked' : '';
+    const selCls = SELECTED_ROWS.has(r.excelRow) ? 'selected' : '';
+    html += `<tr class="${selCls}" data-row="${r.excelRow}">`;
+    html += `<td class="checkbox-col"><input type="checkbox" class="row-check" data-row="${r.excelRow}" ${checked}/></td>`;
+    visibleCols.forEach(c => {
+      const val = r.row[c.idx];
+      const cls = [c.isField ? 'editable' : 'source-col'].filter(Boolean).join(' ');
+      html += `<td class="${cls}" data-col="${c.idx}">${renderCellValue(val, c.name)}</td>`;
+    });
+    html += `<td style="text-align:center"><button class="btn btn-secondary edit-row-btn" style="padding:4px 10px;font-size:11px" data-row="${r.excelRow}">Edit</button></td>`;
+    html += '</tr>';
+  });
+  html += '</tbody>';
+  table.innerHTML = html;
+
+  // Bind events
+  document.getElementById('selectAll').addEventListener('change', e => {
+    if (e.target.checked) {
+      rows.forEach(r => SELECTED_ROWS.add(r.excelRow));
+    } else {
+      rows.forEach(r => SELECTED_ROWS.delete(r.excelRow));
+    }
+    renderTable();
+    updateSelectionBar();
+  });
+
+  table.querySelectorAll('.row-check').forEach(cb => {
+    cb.addEventListener('change', e => {
+      e.stopPropagation();
+      const row = parseInt(cb.dataset.row);
+      if (cb.checked) SELECTED_ROWS.add(row); else SELECTED_ROWS.delete(row);
+      updateSelectionBar();
+      const tr = table.querySelector(`tr[data-row="${row}"]`);
+      if (tr) tr.classList.toggle('selected', cb.checked);
+    });
+  });
+
+  table.querySelectorAll('th.sortable').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = parseInt(th.dataset.col);
+      if (SORT_STATE.col === col) {
+        SORT_STATE.dir = SORT_STATE.dir === 'asc' ? 'desc' : 'asc';
+      } else {
+        SORT_STATE.col = col; SORT_STATE.dir = 'asc';
+      }
+      renderTable();
+    });
+  });
+
+  table.querySelectorAll('.edit-row-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      openEditModal(parseInt(btn.dataset.row));
+    });
+  });
+
+  // Inline edit on field cell click
+  table.querySelectorAll('td.editable').forEach(td => {
+    td.addEventListener('click', () => {
+      const tr = td.closest('tr');
+      const row = parseInt(tr.dataset.row);
+      openEditModal(row);
+    });
+  });
+}
+
+function updateSelectionBar() {
+  const bar = document.getElementById('selectionBar');
+  document.getElementById('selCount').textContent = SELECTED_ROWS.size;
+  bar.classList.toggle('active', SELECTED_ROWS.size > 0);
+}
+
+// ── MODALS ──────────────────────────────────────────────────────────────────
+function openEditModal(excelRow) {
+  const { headers, rows } = CACHE[CURRENT_TAB];
+  const rowData = rows[excelRow - 2];
+  const addr = rowData[headers.indexOf(ADDR_COL[CURRENT_TAB])];
+
+  document.getElementById('editModalTitle').textContent = `Edit: ${addr || 'Row ' + excelRow}`;
+
+  const body = document.getElementById('editModalBody');
+  body.innerHTML = '';
+  FIELD_COLS.forEach(fc => {
+    const colIdx = headers.indexOf(fc);
+    if (colIdx === -1) return;
+    const val = rowData[colIdx] || '';
+    body.insertAdjacentHTML('beforeend', renderFieldRow(fc, val, `edit_${fc}`));
+  });
+
+  const btn = document.getElementById('saveEditBtn');
+  btn.onclick = async () => {
+    btn.disabled = true; btn.textContent = 'Saving...';
+    try {
+      const updates = {};
+      const changes = [];
+      FIELD_COLS.forEach(fc => {
+        const colIdx = headers.indexOf(fc);
+        if (colIdx === -1) return;
+        const el = document.getElementById(`edit_${fc}`);
+        const newVal = el.value;
+        const oldVal = rowData[colIdx] || '';
+        if (String(newVal) !== String(oldVal)) {
+          updates[colIdx] = newVal;
+          changes.push({ col: fc, colIdx, before: oldVal, after: newVal });
+        }
+      });
+      if (Object.keys(updates).length === 0) {
+        toast('No changes to save', 'info'); closeModals(); return;
+      }
+      await writeRow(CURRENT_TAB, excelRow, updates);
+      logActivity({
+        action: 'edit',
+        tab: CURRENT_TAB,
+        excelRow,
+        address: addr,
+        changes
+      });
+      toast(`Updated ${changes.length} field(s) — logged`, 'success');
+      closeModals();
+      renderTable();
+    } catch (e) {
+      toast('Save failed: ' + e.message, 'error', 5000);
+    } finally {
+      btn.disabled = false; btn.textContent = 'Save Changes';
+    }
+  };
+
+  document.getElementById('editModal').classList.add('active');
+}
+
+function renderFieldRow(name, val, id, opts = {}) {
+  const v = val == null ? '' : String(val);
+  let input;
+  if (name === 'Priority') {
+    input = `<select class="form-select" id="${id}"><option value="">—</option><option value="low"${v==='low'?' selected':''}>low</option><option value="med"${v==='med'?' selected':''}>med</option><option value="high"${v==='high'?' selected':''}>high</option></select>`;
+  } else if (name === 'Status') {
+    input = `<select class="form-select" id="${id}"><option value="">—</option><option value="vacant"${v==='vacant'?' selected':''}>vacant</option><option value="occupied"${v==='occupied'?' selected':''}>occupied</option><option value="unknown"${v==='unknown'?' selected':''}>unknown</option></select>`;
+  } else if (['Sticky','Door Knocked','Podio','Called Other Source','Called Batch/IDI'].includes(name)) {
+    input = `<select class="form-select" id="${id}"><option value="">—</option><option value="yes"${v==='yes'?' selected':''}>yes</option><option value="no"${v==='no'?' selected':''}>no</option></select>`;
+  } else if (name === 'Notes') {
+    input = `<textarea class="form-textarea" id="${id}">${escapeHtml(v)}</textarea>`;
+  } else {
+    input = `<input type="text" class="form-input" id="${id}" value="${escapeHtml(v)}"/>`;
+  }
+  return `<div class="form-row"><label class="form-label">${name}</label>${input}</div>`;
+}
+
+function openAddModal() {
+  const { headers } = CACHE[CURRENT_TAB];
+  const body = document.getElementById('addModalBody');
+  body.innerHTML = '';
+
+  // Address first (required for adds)
+  const addrCol = ADDR_COL[CURRENT_TAB];
+  body.insertAdjacentHTML('beforeend', `<div class="form-row"><label class="form-label">${addrCol} *</label><input type="text" class="form-input" id="add_addr" placeholder="e.g. 4730 Hickorygate Dr 77373"/></div>`);
+
+  // Field cols
+  FIELD_COLS.forEach(fc => {
+    if (headers.indexOf(fc) === -1) return;
+    body.insertAdjacentHTML('beforeend', renderFieldRow(fc, '', `add_${fc}`));
+  });
+
+  const btn = document.getElementById('saveAddBtn');
+  btn.onclick = async () => {
+    const addr = document.getElementById('add_addr').value.trim();
+    if (!addr) { toast('Address is required', 'error'); return; }
+
+    // Check duplicate
+    const existing = CACHE[CURRENT_TAB].rows.find(r => {
+      const a = r[headers.indexOf(addrCol)];
+      return a && normalizeAddr(a) === normalizeAddr(addr);
+    });
+    if (existing) {
+      if (!confirm(`An address matching "${addr}" already exists in this tab. Add anyway?`)) return;
+    }
+
+    btn.disabled = true; btn.textContent = 'Adding...';
+    try {
+      const newRow = new Array(headers.length).fill(null);
+      newRow[headers.indexOf(addrCol)] = addr;
+      FIELD_COLS.forEach(fc => {
+        const ci = headers.indexOf(fc);
+        if (ci === -1) return;
+        const el = document.getElementById(`add_${fc}`);
+        if (el && el.value) newRow[ci] = el.value;
+      });
+      const excelRow = await appendRow(CURRENT_TAB, newRow);
+      logActivity({
+        action: 'add',
+        tab: CURRENT_TAB,
+        excelRow,
+        address: addr
+      });
+      toast('Row added — logged', 'success');
+      closeModals();
+      renderTabs();
+      renderTable();
+    } catch (e) {
+      toast('Add failed: ' + e.message, 'error', 5000);
+    } finally {
+      btn.disabled = false; btn.textContent = 'Add Row';
+    }
+  };
+
+  document.getElementById('addModal').classList.add('active');
+}
+
+function openBulkModal() {
+  if (SELECTED_ROWS.size === 0) { toast('No rows selected', 'error'); return; }
+  const { headers } = CACHE[CURRENT_TAB];
+  document.getElementById('bulkCount').textContent = `(${SELECTED_ROWS.size} rows)`;
+  const body = document.getElementById('bulkModalBody');
+  body.innerHTML = '';
+  FIELD_COLS.forEach(fc => {
+    if (headers.indexOf(fc) === -1) return;
+    body.insertAdjacentHTML('beforeend', renderFieldRow(fc, '', `bulk_${fc}`));
+  });
+
+  const btn = document.getElementById('saveBulkBtn');
+  btn.onclick = async () => {
+    const updates = {};
+    FIELD_COLS.forEach(fc => {
+      const ci = headers.indexOf(fc);
+      if (ci === -1) return;
+      const el = document.getElementById(`bulk_${fc}`);
+      if (el && el.value !== '') updates[ci] = el.value;
+    });
+    if (Object.keys(updates).length === 0) { toast('No fields set', 'error'); return; }
+
+    btn.disabled = true;
+    btn.textContent = 'Updating...';
+    const selectedArr = [...SELECTED_ROWS];
+    const addrIdx = headers.indexOf(ADDR_COL[CURRENT_TAB]);
+
+    // Build batch ops and sub-entries
+    const ops = [];
+    const subEntries = [];
+    for (const excelRow of selectedArr) {
+      const rowData = CACHE[CURRENT_TAB].rows[excelRow - 2];
+      const addr = rowData ? rowData[addrIdx] : '';
+      const perRowChanges = [];
+      for (const [colIdx, val] of Object.entries(updates)) {
+        const ci = parseInt(colIdx);
+        const before = rowData ? (rowData[ci] || '') : '';
+        if (String(before) !== String(val)) {
+          ops.push({ tab: CURRENT_TAB, excelRow, colIdx: ci, value: val });
+          perRowChanges.push({ col: headers[ci], colIdx: ci, before, after: val });
+        }
+      }
+      if (perRowChanges.length > 0) {
+        subEntries.push({ action: 'edit', tab: CURRENT_TAB, excelRow, address: addr, changes: perRowChanges });
+      }
+    }
+
+    const { success, failed } = await batchWriteCells(ops);
+
+    if (subEntries.length > 0) {
+      const summary = Object.entries(updates).map(([ci, v]) => `${headers[parseInt(ci)]}=${v}`).join(', ');
+      logActivity({
+        action: 'group',
+        groupType: 'bulk-edit',
+        description: summary,
+        tabsAffected: [CURRENT_TAB],
+        subEntries
+      });
+    }
+
+    toast(`Bulk updated ${subEntries.length} rows — logged as one action`, 'success');
+    SELECTED_ROWS.clear();
+    updateSelectionBar();
+    closeModals();
+    renderTable();
+    btn.disabled = false; btn.textContent = 'Apply to Selected';
+  };
+
+  document.getElementById('bulkModal').classList.add('active');
+}
+
+function openDeleteModal() {
+  if (SELECTED_ROWS.size === 0) { toast('No rows selected', 'error'); return; }
+  document.getElementById('deleteCount').textContent = SELECTED_ROWS.size;
+  document.getElementById('deleteTab').textContent = CURRENT_TAB;
+  const input = document.getElementById('deleteConfirmInput');
+  const btn = document.getElementById('confirmDeleteBtn');
+  input.value = '';
+  btn.disabled = true;
+  input.oninput = () => { btn.disabled = input.value.trim() !== 'DELETE'; };
+  btn.onclick = async () => {
+    closeModals();
+    await executeBulkDelete();
+  };
+  document.getElementById('deleteModal').classList.add('active');
+  setTimeout(() => input.focus(), 100);
+}
+
+async function executeBulkDelete() {
+  // Sort descending so row numbers stay valid as we delete from bottom
+  const rows = [...SELECTED_ROWS].sort((a, b) => b - a);
+  const { headers } = CACHE[CURRENT_TAB];
+  const addrIdx = headers.indexOf(ADDR_COL[CURRENT_TAB]);
+
+  showLoader(`Deleting ${rows.length} rows...`);
+  let done = 0;
+  for (const r of rows) {
+    try {
+      const rowData = [...CACHE[CURRENT_TAB].rows[r - 2]]; // copy before delete
+      const addr = rowData[addrIdx];
+      await deleteRow(CURRENT_TAB, r);
+      logActivity({
+        action: 'delete',
+        tab: CURRENT_TAB,
+        excelRow: r,
+        address: addr,
+        deletedRowData: rowData
+      });
+      done++;
+    } catch(e) { console.error(e); }
+  }
+  hideLoader();
+  toast(`Deleted ${done}/${rows.length} rows — logged`, 'success');
+  SELECTED_ROWS.clear();
+  updateSelectionBar();
+  renderTabs();
+  renderTable();
+}
+
+// ── DUPLICATE CHECK ─────────────────────────────────────────────────────────
+function runDuplicateCheck() {
+  const input = document.getElementById('dupInput').value.trim();
+  if (!input) { toast('Paste some addresses first', 'error'); return; }
+  const addresses = input.split('\n').map(s => s.trim()).filter(Boolean);
+
+  const results = document.getElementById('dupResults');
+  results.innerHTML = '';
+
+  const matches = [];
+  const clean = [];
+
+  addresses.forEach(a => {
+    const normA = normalizeAddr(a);
+    const hits = [];
+    for (const tab of TABS) {
+      if (!CACHE[tab]) continue;
+      const { headers, rows } = CACHE[tab];
+      const ai = headers.indexOf(ADDR_COL[tab]);
+      if (ai === -1) continue;
+      rows.forEach((r, idx) => {
+        const existing = r[ai];
+        if (existing && normalizeAddr(existing) === normA) {
+          hits.push({ tab, row: idx + 2, addr: existing });
+        }
+      });
+    }
+    if (hits.length > 0) matches.push({ input: a, hits });
+    else clean.push(a);
+  });
+
+  let html = `<div style="margin-bottom:12px"><strong style="color:var(--navy-light)">${matches.length}</strong> <span style="color:var(--gray)">duplicate(s) found</span> · <strong style="color:#34D399">${clean.length}</strong> <span style="color:var(--gray)">clean</span></div>`;
+
+  if (matches.length > 0) {
+    html += '<div style="margin-bottom:10px;color:var(--amber);font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:0.5px">Duplicates</div>';
+    matches.forEach(m => {
+      html += `<div class="dup-warn"><strong>${escapeHtml(m.input)}</strong><br>`;
+      m.hits.forEach(h => { html += `<span style="font-size:11px;font-family:var(--mono)">→ ${escapeHtml(h.tab)} (row ${h.row})</span><br>`; });
+      html += '</div>';
+    });
+  }
+
+  if (clean.length > 0) {
+    html += '<div style="margin-top:14px;color:#34D399;font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:0.5px">Clean (no match found)</div>';
+    html += '<div style="background:var(--panel-dark);border:1px solid var(--border);border-radius:6px;padding:10px;margin-top:6px;font-family:var(--mono);font-size:12px;color:var(--light)">';
+    clean.forEach(a => html += `${escapeHtml(a)}<br>`);
+    html += '</div>';
+  }
+
+  results.innerHTML = html;
+}
+
+// ── GLOBAL SEARCH ───────────────────────────────────────────────────────────
+function runGlobalSearch(q) {
+  const container = document.getElementById('globalResults');
+  if (!q || q.length < 3) {
+    container.classList.remove('active');
+    container.innerHTML = '';
+    return;
+  }
+  const normQ = normalizeAddr(q);
+  const hits = [];
+  TABS.forEach(tab => {
+    if (!CACHE[tab]) return;
+    const { headers, rows } = CACHE[tab];
+    const ai = headers.indexOf(ADDR_COL[tab]);
+    if (ai === -1) return;
+    rows.forEach((r, idx) => {
+      const addr = r[ai];
+      if (addr && (normalizeAddr(addr).includes(normQ) || String(addr).toLowerCase().includes(q.toLowerCase()))) {
+        hits.push({ tab, excelRow: idx + 2, addr });
+      }
+    });
+  });
+
+  if (hits.length === 0) {
+    container.innerHTML = `<div class="global-result-header">No matches</div>`;
+    container.classList.add('active');
+    return;
+  }
+
+  let html = `<div class="global-result-header">${hits.length} match${hits.length === 1 ? '' : 'es'} across all tabs</div>`;
+  hits.slice(0, 20).forEach(h => {
+    html += `<div class="global-result-item" data-tab="${h.tab}" data-row="${h.excelRow}">
+      <div class="addr">${escapeHtml(h.addr)}</div>
+      <div class="meta">${h.tab} · row ${h.excelRow}</div>
+    </div>`;
+  });
+  if (hits.length > 20) html += `<div style="padding:10px 14px;color:var(--gray);font-size:11px;font-family:var(--mono)">+ ${hits.length - 20} more — refine your search</div>`;
+  container.innerHTML = html;
+  container.classList.add('active');
+
+  container.querySelectorAll('.global-result-item').forEach(el => {
+    el.addEventListener('click', () => {
+      CURRENT_TAB = el.dataset.tab;
+      renderTabs();
+      renderTable();
+      container.classList.remove('active');
+      document.getElementById('globalSearch').value = '';
+      // Open edit for that row
+      openEditModal(parseInt(el.dataset.row));
+    });
+  });
+}
+
+// ── UTILITIES ───────────────────────────────────────────────────────────────
+function closeModals() {
+  document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
+}
+
+// ── INIT ────────────────────────────────────────────────────────────────────
+// ── ACTIONS: BULK ADD ──────────────────────────────────────────────────────
+const PARSER_TAG_TO_SHEET = {
+  '[PROBATE-HTX]':  'Probate - Houston',
+  '[PROBATE-OOH]':  'Probate - Out of Houston',
+  '[TAX-SUIT]':     'Taxes Under Suit',
+  '[TAX-JUDG]':     'Taxes Under Judgement',
+  '[FORECLOSURE]':  'Foreclosures',
+  '[PUB-NUIS]':     'Order Public Nuisance',
+  '[TAX-AUC]':      'Tax Auction',
+};
+
+function parseBulkAddInput(raw) {
+  const tagPattern = /(\[[\w\-]+\])/g;
+  const parts = raw.split(tagPattern).filter(s => s.trim());
+  const entries = [];
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i].trim();
+    if (part.match(/^\[[\w\-]+\]$/)) {
+      const tag = part;
+      const content = parts[i + 1] || '';
+      i++;
+      const sheet = PARSER_TAG_TO_SHEET[tag];
+      if (!sheet) continue;
+      const fields = {};
+      content.split('\n').map(l => l.trim()).filter(Boolean).forEach(line => {
+        const colon = line.indexOf(':');
+        if (colon === -1) return;
+        const k = line.slice(0, colon).trim();
+        const v = line.slice(colon + 1).trim();
+        if (v) fields[k] = v;
+      });
+      entries.push({ tag, sheet, fields });
+    }
+  }
+  return entries;
+}
+
+function previewBulkAdd() {
+  const raw = document.getElementById('bulkAddInput').value.trim();
+  if (!raw) return;
+  const entries = parseBulkAddInput(raw);
+  const preview = document.getElementById('bulkAddPreview');
+  if (entries.length === 0) {
+    preview.innerHTML = '<div style="color:var(--red);font-size:12px">No valid entries found. Check tag format.</div>';
+    document.getElementById('executeBulkAddBtn').disabled = true;
+    return;
+  }
+
+  // Check duplicates per entry
+  let html = `<div style="color:var(--navy-light);font-size:12px;margin-bottom:8px;font-family:var(--mono)">${entries.length} entr${entries.length===1?'y':'ies'} parsed</div>`;
+  html += '<div class="preview-box">';
+  const dupes = [];
+  entries.forEach((e, i) => {
+    const addr = e.fields['Address'];
+    if (!addr) {
+      html += `<div class="match-row" style="color:#F87171">⚠ Entry ${i+1}: no address</div>`;
+      return;
+    }
+    const sheet = CACHE[e.sheet];
+    let dup = false;
+    if (sheet) {
+      const ai = sheet.headers.indexOf(ADDR_COL[e.sheet]);
+      if (ai !== -1) {
+        dup = sheet.rows.some(r => r[ai] && normalizeAddr(r[ai]) === normalizeAddr(addr));
+      }
+    }
+    if (dup) dupes.push(addr);
+    html += `<div class="match-row">${dup ? '⚠ ' : '✓ '}<span style="color:${dup ? '#FBBF24' : 'var(--white)'}">${escapeHtml(addr)}</span> <span style="color:var(--gray);font-size:11px">→ ${e.sheet}</span></div>`;
+  });
+  html += '</div>';
+  if (dupes.length > 0) {
+    html += `<div style="color:var(--amber);font-size:12px;margin-top:10px">⚠ ${dupes.length} address${dupes.length===1?'':'es'} already exist in the Master List. They'll be added anyway if you proceed.</div>`;
+  }
+  preview.innerHTML = html;
+  document.getElementById('executeBulkAddBtn').disabled = false;
+  window._bulkAddEntries = entries;
+}
+
+async function executeBulkAdd() {
+  const entries = window._bulkAddEntries || [];
+  if (entries.length === 0) return;
+  const btn = document.getElementById('executeBulkAddBtn');
+  btn.disabled = true; btn.textContent = 'Adding...';
+  let added = 0;
+  for (let i = 0; i < entries.length; i++) {
+    const e = entries[i];
+    const addr = e.fields['Address'];
+    if (!addr) continue;
+    try {
+      const { headers } = CACHE[e.sheet];
+      const newRow = new Array(headers.length).fill(null);
+      const ai = headers.indexOf(ADDR_COL[e.sheet]);
+      if (ai !== -1) newRow[ai] = addr;
+      FIELD_COLS.forEach(fc => {
+        const ci = headers.indexOf(fc);
+        if (ci === -1) return;
+        if (e.fields[fc] !== undefined) newRow[ci] = e.fields[fc];
+      });
+      const excelRow = await appendRow(e.sheet, newRow);
+      logActivity({ action: 'add', tab: e.sheet, excelRow, address: addr });
+      added++;
+      btn.textContent = `Adding... (${added}/${entries.length})`;
+    } catch(err) {
+      console.error('Bulk add failed for', addr, err);
+    }
+  }
+  toast(`Added ${added}/${entries.length} rows — logged`, 'success');
+  btn.textContent = 'Add All Rows';
+  btn.disabled = false;
+  document.getElementById('bulkAddInput').value = '';
+  document.getElementById('bulkAddPreview').innerHTML = '';
+  renderTabs();
+  renderTable();
+  closeModals();
+}
+
+// ── ACTIONS: DUPLICATE DETECTION ───────────────────────────────────────────
+function runDuplicateDetection() {
+  const map = new Map(); // normalizedAddr -> [{tab, excelRow, row, addr}]
+  TABS.forEach(tab => {
+    const data = CACHE[tab];
+    if (!data) return;
+    const ai = data.headers.indexOf(ADDR_COL[tab]);
+    if (ai === -1) return;
+    data.rows.forEach((row, idx) => {
+      const addr = row[ai];
+      if (!addr) return;
+      const key = normalizeAddr(addr);
+      if (!key) return;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push({ tab, excelRow: idx + 2, row, addr });
+    });
+  });
+
+  const groups = [];
+  for (const [key, entries] of map) {
+    if (entries.length > 1) groups.push({ key, entries });
+  }
+
+  const container = document.getElementById('dupDetectResults');
+  if (groups.length === 0) {
+    container.innerHTML = '<div style="color:#34D399;font-family:var(--mono);font-size:13px">✓ No duplicates found across all tabs.</div>';
+    document.getElementById('executeMergeBtn').style.display = 'none';
+    return;
+  }
+
+  let html = `<div style="color:var(--amber);font-family:var(--mono);font-size:12px;margin-bottom:12px">Found ${groups.length} duplicate group${groups.length===1?'':'s'}. Select which row to keep in each group.</div>`;
+  groups.forEach((g, gi) => {
+    html += `<div class="merge-group" data-group="${gi}">`;
+    html += `<div class="merge-group-header">Group ${gi+1}: ${escapeHtml(g.entries[0].addr)}</div>`;
+    g.entries.forEach((e, ei) => {
+      // Score the row by how much field data it has
+      const headers = CACHE[e.tab].headers;
+      const fieldData = FIELD_COLS.map(fc => {
+        const ci = headers.indexOf(fc);
+        return ci !== -1 && e.row[ci] ? { col: fc, val: e.row[ci] } : null;
+      }).filter(Boolean);
+      const score = fieldData.length;
+      html += `<div class="merge-option">
+        <input type="radio" name="group_${gi}" value="${ei}" ${ei===0?'checked':''}/>
+        <div style="flex:1">
+          <div><strong>${escapeHtml(e.tab)}</strong> · row ${e.excelRow}</div>
+          <div class="merge-option-meta">${score} field(s) populated${fieldData.length ? ': ' + fieldData.slice(0,4).map(f => `${f.col}=${f.val}`).join(', ') + (fieldData.length > 4 ? '...' : '') : ''}</div>
+        </div>
+      </div>`;
+    });
+    html += `<div style="margin-top:8px;font-size:11px;color:var(--gray)">
+      <label style="display:flex;align-items:center;gap:6px">
+        <input type="checkbox" class="merge-field-data" data-group="${gi}" checked/>
+        Merge field data from discarded rows into kept row (non-empty values win)
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;margin-top:4px">
+        <input type="checkbox" class="delete-discarded" data-group="${gi}"/>
+        Delete discarded rows after merge
+      </label>
+    </div>`;
+    html += '</div>';
+  });
+
+  container.innerHTML = html;
+  document.getElementById('executeMergeBtn').style.display = 'inline-flex';
+  window._dupGroups = groups;
+}
+
+async function executeMerge() {
+  const groups = window._dupGroups || [];
+  if (groups.length === 0) return;
+  const btn = document.getElementById('executeMergeBtn');
+  btn.disabled = true; btn.textContent = 'Merging...';
+
+  let merged = 0, deleted = 0;
+
+  for (let gi = 0; gi < groups.length; gi++) {
+    const g = groups[gi];
+    const keepIdx = parseInt(document.querySelector(`input[name="group_${gi}"]:checked`).value);
+    const mergeData = document.querySelector(`.merge-field-data[data-group="${gi}"]`).checked;
+    const deleteDiscarded = document.querySelector(`.delete-discarded[data-group="${gi}"]`).checked;
+
+    const keeper = g.entries[keepIdx];
+    const discarded = g.entries.filter((_, i) => i !== keepIdx);
+
+    if (mergeData) {
+      const keeperHeaders = CACHE[keeper.tab].headers;
+      const updates = {};
+      const changes = [];
+      for (const d of discarded) {
+        const dHeaders = CACHE[d.tab].headers;
+        for (const fc of FIELD_COLS) {
+          const keeperCi = keeperHeaders.indexOf(fc);
+          const dCi = dHeaders.indexOf(fc);
+          if (keeperCi === -1 || dCi === -1) continue;
+          const keeperVal = keeper.row[keeperCi];
+          const dVal = d.row[dCi];
+          if (dVal && !keeperVal) {
+            updates[keeperCi] = dVal;
+            changes.push({ col: fc, colIdx: keeperCi, before: keeperVal || '', after: dVal });
+          }
+        }
+      }
+      if (Object.keys(updates).length > 0) {
+        try {
+          await writeRow(keeper.tab, keeper.excelRow, updates);
+          logActivity({ action: 'edit', tab: keeper.tab, excelRow: keeper.excelRow, address: keeper.addr, changes });
+          merged++;
+        } catch(e) { console.error('Merge write failed', e); }
+      }
+    }
+
+    if (deleteDiscarded) {
+      // Sort descending to preserve row numbers
+      const toDelete = discarded.sort((a, b) => b.excelRow - a.excelRow);
+      for (const d of toDelete) {
+        try {
+          const rowData = [...CACHE[d.tab].rows[d.excelRow - 2]];
+          await deleteRow(d.tab, d.excelRow);
+          logActivity({ action: 'delete', tab: d.tab, excelRow: d.excelRow, address: d.addr, deletedRowData: rowData });
+          deleted++;
+        } catch(e) { console.error('Delete discarded failed', e); }
+      }
+    }
+  }
+
+  toast(`Merged ${merged} group(s), deleted ${deleted} row(s) — logged`, 'success');
+  btn.disabled = false; btn.textContent = 'Apply Merges';
+  renderTabs();
+  renderTable();
+  runDuplicateDetection(); // re-run to show remaining
+}
+
+// ── ACTIONS: CONDITIONAL UPDATE ─────────────────────────────────────────────
+function openConditionalModal() {
+  const tabSel = document.getElementById('condTab');
+  tabSel.innerHTML = TABS.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('');
+  renderConditionRows();
+  updateCondSetColumns();
+  document.getElementById('condPreview').innerHTML = '';
+  document.getElementById('executeCondBtn').disabled = true;
+
+  tabSel.onchange = () => { renderConditionRows(); updateCondSetColumns(); };
+  document.getElementById('addCondBtn').onclick = addConditionRow;
+  document.getElementById('previewCondBtn').onclick = previewConditional;
+  document.getElementById('executeCondBtn').onclick = executeConditional;
+}
+
+function getTabFieldColumns(tab) {
+  const data = CACHE[tab];
+  if (!data) return [];
+  return data.headers.map((h, i) => ({ name: h, idx: i })).filter(c => FIELD_COLS.includes(c.name));
+}
+
+function renderConditionRows() {
+  const container = document.getElementById('condRows');
+  container.innerHTML = '';
+  addConditionRow();
+}
+
+function addConditionRow() {
+  const container = document.getElementById('condRows');
+  const tab = document.getElementById('condTab').value;
+  const cols = getTabFieldColumns(tab);
+  const id = 'cond_' + Date.now() + '_' + Math.random().toString(36).slice(2,5);
+  const row = document.createElement('div');
+  row.className = 'condition-row';
+  row.innerHTML = `
+    <select class="form-select cond-col">${cols.map(c => `<option value="${c.idx}">${escapeHtml(c.name)}</option>`).join('')}</select>
+    <select class="form-select cond-op">
+      <option value="eq">equals</option>
+      <option value="neq">not equals</option>
+      <option value="contains">contains</option>
+      <option value="empty">is empty</option>
+      <option value="notempty">is not empty</option>
+    </select>
+    <input type="text" class="form-input cond-val" placeholder="value"/>
+    <button class="btn btn-secondary cond-remove" style="flex:0;padding:6px 10px;font-size:12px">×</button>
+  `;
+  container.appendChild(row);
+  row.querySelector('.cond-remove').onclick = () => row.remove();
+  row.querySelector('.cond-op').onchange = (e) => {
+    const valEl = row.querySelector('.cond-val');
+    if (['empty','notempty'].includes(e.target.value)) {
+      valEl.disabled = true; valEl.value = '';
+    } else {
+      valEl.disabled = false;
+    }
+  };
+}
+
+function updateCondSetColumns() {
+  const tab = document.getElementById('condTab').value;
+  const cols = getTabFieldColumns(tab);
+  const sel = document.getElementById('condSetCol');
+  sel.innerHTML = cols.map(c => `<option value="${c.idx}">${escapeHtml(c.name)}</option>`).join('');
+}
+
+function evalCondition(rowValue, op, testValue) {
+  const rv = rowValue == null ? '' : String(rowValue).toLowerCase();
+  const tv = testValue == null ? '' : String(testValue).toLowerCase();
+  switch (op) {
+    case 'eq': return rv === tv;
+    case 'neq': return rv !== tv;
+    case 'contains': return rv.includes(tv);
+    case 'empty': return !rv.trim();
+    case 'notempty': return !!rv.trim();
+    default: return false;
+  }
+}
+
+function getConditionalMatches() {
+  const tab = document.getElementById('condTab').value;
+  const data = CACHE[tab];
+  if (!data) return { matches: [], tab, setColIdx: null, setVal: null };
+  const condRows = [...document.querySelectorAll('#condRows .condition-row')].map(r => ({
+    colIdx: parseInt(r.querySelector('.cond-col').value),
+    op: r.querySelector('.cond-op').value,
+    val: r.querySelector('.cond-val').value,
+  }));
+  const matches = data.rows.map((row, i) => {
+    const allMatch = condRows.every(c => evalCondition(row[c.colIdx], c.op, c.val));
+    return allMatch ? { row, excelRow: i + 2 } : null;
+  }).filter(Boolean);
+  return {
+    matches,
+    tab,
+    setColIdx: parseInt(document.getElementById('condSetCol').value),
+    setVal: document.getElementById('condSetVal').value,
+    headers: data.headers,
+  };
+}
+
+function previewConditional() {
+  const { matches, tab, setColIdx, setVal, headers } = getConditionalMatches();
+  const container = document.getElementById('condPreview');
+
+  if (matches.length === 0) {
+    container.innerHTML = '<div style="color:var(--gray);font-size:12px">No rows match the conditions.</div>';
+    document.getElementById('executeCondBtn').disabled = true;
+    return;
+  }
+
+  const ai = headers.indexOf(ADDR_COL[tab]);
+  let html = `<div style="color:var(--navy-light);font-size:12px;margin-bottom:8px;font-family:var(--mono)">${matches.length} row(s) will be updated — ${escapeHtml(headers[setColIdx])} → ${escapeHtml(setVal || '(empty)')}</div>`;
+  html += '<div class="preview-box">';
+  matches.slice(0, 20).forEach(m => {
+    const addr = m.row[ai] || `Row ${m.excelRow}`;
+    const current = m.row[setColIdx] || '(empty)';
+    html += `<div class="match-row"><span style="color:var(--white)">${escapeHtml(addr)}</span> <span style="color:var(--gray);font-size:11px">· ${escapeHtml(headers[setColIdx])}: ${escapeHtml(current)} → ${escapeHtml(setVal || '(empty)')}</span></div>`;
+  });
+  if (matches.length > 20) html += `<div style="color:var(--gray);font-size:11px;padding:6px 0">+ ${matches.length - 20} more</div>`;
+  html += '</div>';
+  container.innerHTML = html;
+  document.getElementById('executeCondBtn').disabled = false;
+}
+
+async function executeConditional() {
+  const { matches, tab, setColIdx, setVal, headers } = getConditionalMatches();
+  if (matches.length === 0) return;
+  const btn = document.getElementById('executeCondBtn');
+  btn.disabled = true; btn.textContent = 'Updating...';
+  const ai = headers.indexOf(ADDR_COL[tab]);
+
+  // Build ops and sub-entries
+  const ops = [];
+  const subEntries = [];
+  matches.forEach(m => {
+    const before = m.row[setColIdx] || '';
+    if (String(before) === String(setVal)) return;
+    ops.push({ tab, excelRow: m.excelRow, colIdx: setColIdx, value: setVal });
+    subEntries.push({
+      action: 'edit',
+      tab,
+      excelRow: m.excelRow,
+      address: m.row[ai] || '',
+      changes: [{ col: headers[setColIdx], colIdx: setColIdx, before, after: setVal }]
+    });
+  });
+
+  const { success } = await batchWriteCells(ops);
+
+  if (subEntries.length > 0) {
+    logActivity({
+      action: 'group',
+      groupType: 'conditional-update',
+      description: `${headers[setColIdx]} → ${setVal || '(empty)'}`,
+      tabsAffected: [tab],
+      subEntries
+    });
+  }
+
+  toast(`Updated ${success}/${ops.length} rows — logged as one action`, 'success');
+  btn.disabled = false; btn.textContent = 'Apply Update';
+  closeModals();
+  renderTable();
+}
+
+// ── ACTIONS: FIND & REPLACE ─────────────────────────────────────────────────
+function openFindReplaceModal() {
+  const tabSel = document.getElementById('frTab');
+  tabSel.innerHTML = '<option value="__all__">All tabs</option>' + TABS.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('');
+  tabSel.onchange = updateFrColumns;
+  updateFrColumns();
+  document.getElementById('frPreview').innerHTML = '';
+  document.getElementById('executeFrBtn').disabled = true;
+  document.getElementById('previewFrBtn').onclick = previewFindReplace;
+  document.getElementById('executeFrBtn').onclick = executeFindReplace;
+}
+
+function updateFrColumns() {
+  const tab = document.getElementById('frTab').value;
+  const colSel = document.getElementById('frCol');
+  let cols = new Set(FIELD_COLS);
+  if (tab !== '__all__' && CACHE[tab]) {
+    cols = new Set(CACHE[tab].headers);
+  }
+  colSel.innerHTML = [...cols].map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+}
+
+function getFindReplaceMatches() {
+  const tabChoice = document.getElementById('frTab').value;
+  const colName = document.getElementById('frCol').value;
+  const find = document.getElementById('frFind').value;
+  const replace = document.getElementById('frReplace').value;
+  const caseSensitive = document.getElementById('frCaseSensitive').checked;
+  const wholeCell = document.getElementById('frWholeCell').checked;
+
+  if (!find) return { matches: [] };
+
+  const tabs = tabChoice === '__all__' ? TABS : [tabChoice];
+  const matches = [];
+  tabs.forEach(tab => {
+    const data = CACHE[tab];
+    if (!data) return;
+    const colIdx = data.headers.indexOf(colName);
+    if (colIdx === -1) return;
+    const ai = data.headers.indexOf(ADDR_COL[tab]);
+    data.rows.forEach((row, i) => {
+      const val = row[colIdx];
+      if (val == null) return;
+      const str = String(val);
+      let newStr;
+      if (wholeCell) {
+        if (caseSensitive ? str === find : str.toLowerCase() === find.toLowerCase()) newStr = replace;
+      } else {
+        const re = new RegExp(find.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), caseSensitive ? 'g' : 'gi');
+        if (re.test(str)) newStr = str.replace(re, replace);
+      }
+      if (newStr !== undefined && newStr !== str) {
+        matches.push({ tab, excelRow: i + 2, colIdx, colName, before: str, after: newStr, address: ai !== -1 ? row[ai] : '' });
+      }
+    });
+  });
+  return { matches, find, replace };
+}
+
+function previewFindReplace() {
+  const { matches } = getFindReplaceMatches();
+  const container = document.getElementById('frPreview');
+  if (matches.length === 0) {
+    container.innerHTML = '<div style="color:var(--gray);font-size:12px">No matches found.</div>';
+    document.getElementById('executeFrBtn').disabled = true;
+    return;
+  }
+  let html = `<div style="color:var(--navy-light);font-size:12px;margin-bottom:8px;font-family:var(--mono)">${matches.length} replacement(s) will be made</div>`;
+  html += '<div class="preview-box">';
+  matches.slice(0, 25).forEach(m => {
+    html += `<div class="match-row"><span style="color:var(--white)">${escapeHtml(m.address || 'Row ' + m.excelRow)}</span> <span style="color:var(--gray);font-size:11px">· ${escapeHtml(m.tab)} · ${escapeHtml(m.colName)}</span><br><span style="color:#F87171;font-size:11px">${escapeHtml(m.before)}</span> → <span style="color:#34D399;font-size:11px">${escapeHtml(m.after)}</span></div>`;
+  });
+  if (matches.length > 25) html += `<div style="color:var(--gray);font-size:11px;padding:6px 0">+ ${matches.length - 25} more</div>`;
+  html += '</div>';
+  container.innerHTML = html;
+  document.getElementById('executeFrBtn').disabled = false;
+}
+
+async function executeFindReplace() {
+  const { matches } = getFindReplaceMatches();
+  if (matches.length === 0) return;
+  const btn = document.getElementById('executeFrBtn');
+  btn.disabled = true; btn.textContent = 'Replacing...';
+
+  const ops = matches.map(m => ({ tab: m.tab, excelRow: m.excelRow, colIdx: m.colIdx, value: m.after }));
+  const { success } = await batchWriteCells(ops);
+
+  // Log as single group
+  const tabsAffected = [...new Set(matches.map(m => m.tab))];
+  const subEntries = matches.map(m => ({
+    action: 'edit',
+    tab: m.tab,
+    excelRow: m.excelRow,
+    address: m.address || '',
+    changes: [{ col: m.colName, colIdx: m.colIdx, before: m.before, after: m.after }]
+  }));
+  logActivity({
+    action: 'group',
+    groupType: 'find-replace',
+    description: `Replaced "${matches[0].before.slice(0,40)}${matches[0].before.length>40?'...':''}" → "${matches[0].after.slice(0,40)}${matches[0].after.length>40?'...':''}"`,
+    tabsAffected,
+    subEntries
+  });
+
+  toast(`Replaced ${success}/${matches.length} cells — logged as one action`, 'success');
+  btn.disabled = false; btn.textContent = 'Replace All';
+  closeModals();
+  renderTable();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  // User picker
+  document.querySelectorAll('.user-pick-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.user-pick-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      CURRENT_USER = btn.dataset.user;
+    });
+  });
+
+  // Activity panel
+  document.getElementById('activityBtn').addEventListener('click', () => {
+    document.getElementById('activityPanel').classList.add('active');
+    updateActivityPanel();
+  });
+  document.getElementById('closeActivityBtn').addEventListener('click', () => {
+    document.getElementById('activityPanel').classList.remove('active');
+  });
+
+  // Actions panel
+  document.getElementById('actionsBtn').addEventListener('click', () => {
+    document.getElementById('actionsPanel').classList.add('active');
+  });
+  document.getElementById('closeActionsBtn').addEventListener('click', () => {
+    document.getElementById('actionsPanel').classList.remove('active');
+  });
+
+  // Action cards
+  document.querySelectorAll('.action-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const action = card.dataset.action;
+      document.getElementById('actionsPanel').classList.remove('active');
+
+      if (action === 'bulk-add') {
+        document.getElementById('bulkAddInput').value = '';
+        document.getElementById('bulkAddPreview').innerHTML = '';
+        document.getElementById('executeBulkAddBtn').disabled = true;
+        document.getElementById('previewBulkAddBtn').onclick = previewBulkAdd;
+        document.getElementById('executeBulkAddBtn').onclick = executeBulkAdd;
+        document.getElementById('bulkAddModal').classList.add('active');
+      } else if (action === 'dup-check') {
+        document.getElementById('dupDetectResults').innerHTML = '';
+        document.getElementById('executeMergeBtn').style.display = 'none';
+        document.getElementById('runDupDetectBtn').onclick = runDuplicateDetection;
+        document.getElementById('executeMergeBtn').onclick = executeMerge;
+        document.getElementById('dupDetectModal').classList.add('active');
+      } else if (action === 'conditional') {
+        openConditionalModal();
+        document.getElementById('conditionalModal').classList.add('active');
+      } else if (action === 'find-replace') {
+        openFindReplaceModal();
+        document.getElementById('findReplaceModal').classList.add('active');
+      }
+    });
+  });
+
+  // Unlock
+  document.getElementById('toggleBtn').addEventListener('click', () => {
+    const i = document.getElementById('secretInput');
+    const b = document.getElementById('toggleBtn');
+    if (i.type === 'password') { i.type = 'text'; b.textContent = 'HIDE'; }
+    else { i.type = 'password'; b.textContent = 'SHOW'; }
+  });
+
+  async function doUnlock() {
+    if (!CURRENT_USER) {
+      toast('Select who is using the tool first', 'error');
+      return;
+    }
+    const secret = document.getElementById('secretInput').value.trim();
+    if (!secret) return;
+    const btn = document.getElementById('unlockBtn');
+    btn.disabled = true; btn.textContent = 'Verifying...';
+    try {
+      const data = await authenticate(secret);
+      if (data.access_token) {
+        CLIENT_SECRET = secret;
+        ACCESS_TOKEN = data.access_token;
+        setTimeout(() => { ACCESS_TOKEN = null; }, 55 * 60 * 1000);
+        document.getElementById('unlockOverlay').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+        document.getElementById('userLabel').textContent = CURRENT_USER;
+        await loadAllTabs();
+        await ensureAuditTab();
+        renderTabs();
+        renderTable();
+        updatePullFilter();
+        updateActivityPanel();
+        toast(`Welcome, ${CURRENT_USER}. Loaded all tabs.`, 'success');
+      } else {
+        document.getElementById('unlockError').style.display = 'block';
+      }
+    } catch (e) {
+      document.getElementById('unlockError').textContent = 'Error: ' + e.message;
+      document.getElementById('unlockError').style.display = 'block';
+    } finally {
+      btn.disabled = false; btn.textContent = 'Unlock';
+    }
+  }
+
+  document.getElementById('unlockBtn').addEventListener('click', doUnlock);
+  document.getElementById('secretInput').addEventListener('keydown', e => { if (e.key === 'Enter') doUnlock(); });
+
+  // Modal close buttons
+  document.querySelectorAll('[data-close]').forEach(btn => {
+    btn.addEventListener('click', () => closeModals());
+  });
+  document.querySelectorAll('.modal-overlay').forEach(m => {
+    m.addEventListener('click', e => { if (e.target === m) closeModals(); });
+  });
+
+  // Filter events
+  ['tabSearch', 'filterPriority', 'filterStatus', 'filterPodio', 'filterPull'].forEach(id => {
+    document.getElementById(id).addEventListener('input', renderTable);
+    document.getElementById(id).addEventListener('change', renderTable);
+  });
+
+  document.getElementById('toggleSource').addEventListener('click', () => {
+    SHOW_SOURCE = !SHOW_SOURCE;
+    document.getElementById('toggleSource').textContent = SHOW_SOURCE ? 'Hide Source Data' : 'Show Source Data';
+    renderTable();
+  });
+
+  // Global search (debounced)
+  let searchTimer;
+  document.getElementById('globalSearch').addEventListener('input', e => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => runGlobalSearch(e.target.value.trim()), 200);
+  });
+
+  // Action buttons
+  document.getElementById('addRowBtn').addEventListener('click', openAddModal);
+  document.getElementById('dupCheckBtn').addEventListener('click', () => {
+    document.getElementById('dupInput').value = '';
+    document.getElementById('dupResults').innerHTML = '';
+    document.getElementById('dupModal').classList.add('active');
+  });
+  document.getElementById('runDupBtn').addEventListener('click', runDuplicateCheck);
+  document.getElementById('refreshBtn').addEventListener('click', async () => {
+    showLoader('Refreshing...');
+    for (const t of TABS) await loadTab(t, true);
+    hideLoader();
+    renderTabs();
+    renderTable();
+    updatePullFilter();
+    toast('Refreshed', 'success');
+  });
+
+  document.getElementById('bulkEditBtn').addEventListener('click', openBulkModal);
+  document.getElementById('bulkDeleteBtn').addEventListener('click', openDeleteModal);
+  document.getElementById('clearSelBtn').addEventListener('click', () => {
+    SELECTED_ROWS.clear();
+    updateSelectionBar();
+    renderTable();
+  });
+});
+</script>
+</body>
+</html>
